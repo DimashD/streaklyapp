@@ -1,6 +1,10 @@
 [build]
   publish = "."
   command = ""
+  ignore = "exit 0"
+
+[build.environment]
+  PYTHON_VERSION = "skip"
 
 [[headers]]
   for = "/*"
