@@ -1950,15 +1950,7 @@ async function showReferral() {
     return;
   }
   const link = stats.referralLink || (window.location.origin + '?ref=' + stats.referralCode);
-  const msg  = `🤝 Реферальная программа
-
-Пригласи друга — оба получите +7 дней Pro 🎁
-
-Приглашений: ${stats.totalReferrals}
-Дней Pro заработано: ${stats.totalDaysEarned}
-
-Твоя ссылка:
-${link}`;
+  const msg = '🤝 Пригласи друга — оба получите +7 дней Pro 🎁! Ссылка: ' + link;
   // Используем Web Share API если доступен
   if (navigator.share) {
     navigator.share({
@@ -1969,8 +1961,7 @@ ${link}`;
   } else {
     // Копируем в буфер
     navigator.clipboard.writeText(link).then(() => {
-      toast('📋 Ссылка скопирована!
-' + link);
+      toast('📋 Ссылка скопирована! ' + link);
     }).catch(() => {
       toast('Ссылка: ' + link);
     });
