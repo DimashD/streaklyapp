@@ -1,0 +1,23 @@
+# Telegram Bot
+aiogram==3.4.1
+apscheduler==3.10.4
+
+# Redis (FSM storage)
+redis==5.0.1
+aioredis==2.0.1
+
+# Backend / API
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Database
+asyncpg==0.29.0
+
+# HTTP client (Strava API, OpenAI, Kaspi)
+httpx==0.26.0
+
+# Data validation
+pydantic==2.5.3
+
+# Utilities
+python-dotenv==1.0.0

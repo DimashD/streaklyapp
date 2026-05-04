@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Streakly">
+<meta name="theme-color" content="#0d0d12">
+<link rel="manifest" href="./manifest.json">
+<title>Streakly</title>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@500;600;700&family=Cabinet+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0d12; --bg2:#141419; --bg3:#1a1a22;
+  --card:#1e1e28; --card2:#252532;
+  --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.13);
+  --ink:#eeeaf8; --ink2:#b8b4d4; --ink3:#6e6b8a;
+  --v:#8b5cf6; --v2:#a78bfa; --v3:#c4b5fd;
+  --g:#10b981; --g2:#34d399;
+  --o:#f59e0b; --o2:#fcd34d;
+  --b:#3b82f6; --b2:#93c5fd;
+  --r:#ef4444;
+  --tg:#229ED9;
+  --rc:18px; --rsm:12px;
+  --nav:76px;
+  --st:env(safe-area-inset-top,0px);
+  --sb:env(safe-area-inset-bottom,0px);
+  font-family:'Cabinet Grotesk',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;}
+#app{width:100%;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+
+.clash{font-family:'Clash Display',sans-serif;}
+
+/* ══════════════════════════════════════════
+   AUTH SCREEN — Telegram Login
+══════════════════════════════════════════ */
+#auth-screen {
+  position:absolute;inset:0;z-index:300;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 24px;
+}
+.auth-logo{font-size:64px;margin-bottom:20px;}
+.auth-title{font-family:'Clash Display',sans-serif;font-size:30px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:10px;}
+.auth-sub{font-size:15px;color:var(--ink2);text-align:center;line-height:1.6;margin-bottom:36px;max-width:320px;}
+
+.tg-btn {
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;padding:17px;border:none;border-radius:var(--rc);
+  background:var(--tg);color:#fff;
+  font-family:'Clash Display',sans-serif;font-size:17px;font-weight:600;
+  cursor:pointer;margin-bottom:14px;
+  box-shadow:0 8px 28px rgba(34,158,217,.35);
+  transition:transform .15s,opacity .15s;
+}
+.tg-btn:active{transform:scale(.97);}
+.tg-btn-icon{font-size:22px;}
+
+.auth-divider{display:flex;align-items:center;gap:10px;width:100%;margin:4px 0 14px;}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--line2);}
+.auth-divider span{font-size:12px;color:var(--ink3);}
+
+.guest-btn {
+  width:100%;padding:15px;border:1.5px solid var(--line2);border-radius:var(--rc);
+  background:transparent;color:var(--ink2);
+  font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:600;
+  cursor:pointer;transition:all .2s;margin-bottom:24px;
+}
+.guest-btn:active{background:var(--card);}
+
+.auth-legal{font-size:12px;color:var(--ink3);text-align:center;line-height:1.6;max-width:280px;}
+.auth-legal a{color:var(--v2);text-decoration:none;}
+
+/* Phone request modal */
+#phone-modal {
+  position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);
+  z-index:400;display:none;flex-direction:column;justify-content:flex-end;
+  padding-bottom:calc(16px + var(--sb));
+}
+#phone-modal.open{display:flex;}
+.pm-sheet{background:var(--bg2);border-radius:28px 28px 0 0;padding:26px 22px;animation:slideUp .35s ease;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.pm-handle{width:36px;height:4px;background:var(--card2);border-radius:99px;margin:0 auto 20px;}
+.pm-title{font-family:'Clash Display',sans-serif;font-size:22px;font-weight:700;color:var(--ink);margin-bottom:8px;}
+.pm-sub{font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:22px;}
+.pm-benefits{display:flex;flex-direction:column;gap:10px;margin-bottom:22px;}
+.pm-benefit{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink2);}
+.pm-benefit-ic{width:32px;height:32px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.pm-inp{width:100%;background:var(--card);border:1.5px solid var(--line2);border-radius:var(--rsm);padding:15px 14px;color:var(--ink);font-size:16px;font-family:'Cabinet Grotesk',sans-serif;margin-bottom:12px;outline:none;transition:border-color .2s;}
+.pm-inp:focus{border-color:var(--v);}
+.pm-inp::placeholder{color:var(--ink3);}
+.pm-btn{width:100%;padding:16px;border:none;border-radius:var(--rsm);background:var(--v);color:#fff;font-family:'Clash Display',sans-serif;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px;transition:transform .15s;}
+.pm-btn:active{transform:scale(.97);}
+.pm-skip{width:100%;padding:12px;border:none;background:transparent;color:var(--ink3);font-size:14px;cursor:pointer;}
+.pm-consent{font-size:11px;color:var(--ink3);text-align:center;line-height:1.6;margin-top:8px;}
+.pm-consent a{color:var(--v2);}
+
+/* ══════════════════════════════════════════
+   ONBOARDING
+══════════════════════════════════════════ */
+#ob{position:absolute;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;padding:0 22px;padding-top:calc(var(--st)+14px);}
+.ob-dots{display:flex;gap:6px;margin-bottom:32px;}
+.ob-dot{flex:1;height:3px;border-radius:99px;background:var(--card2);transition:background .4s;}
+.ob-dot.on{background:var(--v);}
+.ob-slide{display:none;flex-direction:column;flex:1;animation:riseIn .4s ease;}
+.ob-slide.on{display:flex;}
+@keyframes riseIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.ob-emoji{font-size:54px;margin-bottom:18px;}
+.ob-h{font-family:'Clash Display',sans-serif;font-size:27px;font-weight:700;line-height:1.15;margin-bottom:10px;}
+.ob-p{font-size:15px;color:var(--ink2);line-height:1.6;margin-bottom:24px;}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+.chip{padding:10px 15px;border-radius:99px;border:1.5px solid var(--line2);background:var(--card);color:var(--ink2);font-size:14px;cursor:pointer;transition:all .2s;user-select:none;}
+.chip.on{background:rgba(139,92,246,.18);border-color:var(--v);color:var(--v3);}
+.spacer{flex:1;}
+.ob-btn{width:100%;padding:17px;border:none;border-radius:var(--rc);background:var(--v);color:#fff;font-family:'Clash Display',sans-serif;font-size:17px;font-weight:600;cursor:pointer;margin-bottom:calc(18px + var(--sb));box-shadow:0 8px 28px rgba(139,92,246,.35);transition:transform .15s;}
+.ob-btn:active{transform:scale(.97);}
+.time-row{display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--line);margin-bottom:8px;}
+.time-inp{background:transparent;border:none;font-family:'Clash Display',sans-serif;font-size:19px;font-weight:600;color:var(--v2);outline:none;width:72px;cursor:pointer;}
+.time-inp::-webkit-calendar-picker-indicator{filter:invert(.7);cursor:pointer;}
+
+/* ══════════════════════════════════════════
+   SHELL & PAGES
+══════════════════════════════════════════ */
+#shell{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.page{display:none;flex-direction:column;flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--nav)+var(--sb)+16px);-webkit-overflow-scrolling:touch;}
+.page.on{display:flex;}
+.page::-webkit-scrollbar{width:2px;}
+.page::-webkit-scrollbar-thumb{background:var(--card2);border-radius:99px;}
+
+.ph{position:sticky;top:0;z-index:20;background:rgba(13,13,18,.93);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:calc(var(--st)+13px) 18px 13px;border-bottom:1px solid var(--line);}
+.ph-row{display:flex;align-items:center;justify-content:space-between;}
+.ph-title{font-family:'Clash Display',sans-serif;font-size:23px;font-weight:700;color:var(--ink);}
+.ph-sub{font-size:13px;color:var(--ink3);margin-top:1px;}
+.ico-btn{width:40px;height:40px;border-radius:50%;background:var(--card);border:none;font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink2);}
+
+/* STREAK HERO */
+.hero{margin:14px 14px 0;background:linear-gradient(135deg,#6d28d9,#8b5cf6,#a855f7);border-radius:var(--rc);padding:20px;position:relative;overflow:hidden;}
+.hero::after{content:'';position:absolute;right:-20px;top:-20px;width:110px;height:110px;background:rgba(255,255,255,.07);border-radius:50%;}
+.hero-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.hero-fire{font-size:38px;}
+.hero-num{font-family:'Clash Display',sans-serif;font-size:50px;font-weight:700;color:#fff;line-height:1;}
+.hero-unit{font-size:14px;color:rgba(255,255,255,.7);margin-top:6px;}
+.hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:rgba(0,0,0,.22);border-radius:11px;padding:11px;}
+.hg-l{font-size:10px;color:rgba(255,255,255,.55);margin-bottom:1px;}
+.hg-v{font-family:'Clash Display',sans-serif;font-size:18px;font-weight:600;color:#fff;}
+
+.prog{margin:10px 14px;}
+.prog-row{display:flex;justify-content:space-between;font-size:13px;color:var(--ink3);margin-bottom:5px;}
+.prog-row strong{color:var(--ink);}
+.prog-track{height:6px;background:var(--card2);border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--v),var(--g));transition:width .6s cubic-bezier(.34,1.56,.64,1);}
+
+.sec{padding:18px 14px 0;}
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
+.sec-title{font-family:'Clash Display',sans-serif;font-size:17px;font-weight:600;}
+.sec-act{font-size:13px;color:var(--v2);cursor:pointer;font-weight:500;}
+
+/* HABIT CARDS */
+.hc{background:var(--card);border-radius:var(--rc);border:1px solid var(--line);margin-bottom:10px;overflow:hidden;transition:transform .15s;cursor:pointer;}
+.hc:active{transform:scale(.985);}
+.hc.done{border-color:rgba(16,185,129,.25);background:rgba(16,185,129,.05);}
+.hc-main{display:flex;align-items:center;gap:13px;padding:14px;}
+.hc-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.hc-info{flex:1;min-width:0;}
+.hc-name{font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hc-meta{font-size:12px;color:var(--ink3);margin-top:3px;display:flex;align-items:center;gap:8px;}
+.hc-streak{font-weight:700;color:var(--o);}
+.hc-time{background:var(--card2);padding:2px 8px;border-radius:99px;font-size:11px;}
+.hc-check{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--line2);background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:14px;color:transparent;flex-shrink:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);}
+.hc.done .hc-check{background:var(--g);border-color:var(--g);color:#fff;}
+.hc-strip{display:none;padding:12px 14px 14px;border-top:1px solid var(--line);background:rgba(0,0,0,.15);}
+.hc-strip.on{display:block;}
+
+/* Strip components */
+.run-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.rm{background:var(--card2);border-radius:10px;padding:10px 8px;text-align:center;}
+.rm-v{font-family:'Clash Display',sans-serif;font-size:16px;font-weight:700;color:var(--g2);}
+.rm-l{font-size:10px;color:var(--ink3);margin-top:2px;}
+.mini-bars{display:flex;align-items:flex-end;gap:4px;height:36px;margin-bottom:6px;}
+.mb{flex:1;border-radius:3px 3px 0 0;min-height:3px;}
+.strip-btn{display:block;width:100%;margin-top:10px;padding:10px;border:1px solid var(--line2);border-radius:var(--rsm);background:transparent;color:var(--v2);font-size:13px;font-weight:600;cursor:pointer;text-align:center;}
+
+.book-strip-card{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;}
+.book-cover-sm{width:44px;height:60px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.bprog-track{height:5px;background:var(--card2);border-radius:99px;overflow:hidden;margin-bottom:3px;}
+.bprog-fill{height:100%;background:linear-gradient(90deg,var(--o),var(--v));border-radius:99px;}
+
+.ring-row{display:flex;align-items:center;gap:14px;}
+.ring-wrap{position:relative;width:64px;height:64px;flex-shrink:0;}
+.ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:var(--card2);stroke-width:6;}
+.ring-fill{fill:none;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .6s ease;}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ring-val{font-family:'Clash Display',sans-serif;font-size:14px;font-weight:700;color:var(--ink);}
+.ring-unit{font-size:9px;color:var(--ink3);}
+.water-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.wbtn{padding:7px 11px;border:1px solid var(--line2);border-radius:var(--rsm);background:var(--card2);color:var(--b2);font-size:12px;font-weight:600;cursor:pointer;transition:background .15s;}
+.wbtn:active{background:var(--card);}
+
+/* STAT CHARTS */
+.chart-card{background:var(--card2);border-radius:var(--rsm);padding:14px;border:1px solid var(--line);margin:0 14px 14px;}
+.cc-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px;}
+.bc-g{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;}
+.bc-bar{width:100%;border-radius:5px 5px 0 0;min-height:3px;transition:height .5s ease;}
+.bc-lbl{font-size:10px;color:var(--ink3);}
+.hm{aspect-ratio:1;border-radius:3px;background:var(--card2);}
+.hm.l1{background:rgba(139,92,246,.2);}
+.hm.l2{background:rgba(139,92,246,.45);}
+.hm.l3{background:rgba(139,92,246,.7);}
+.hm.l4{background:var(--v);}
+.mt-col{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.mt-lbl{font-size:10px;color:var(--ink3);}
+
+/* SOCIAL */
+.hf{flex-shrink:0;padding:7px 13px;border-radius:99px;background:var(--card);border:1.5px solid var(--line);font-size:13px;font-weight:600;color:var(--ink3);cursor:pointer;transition:all .2s;user-select:none;}
+.hf.on{background:rgba(139,92,246,.15);border-color:var(--v);color:var(--v3);}
+.lb-row{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--card);border-radius:var(--rsm);margin-bottom:7px;border:1px solid var(--line);}
+.lb-row.me{background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.3);}
+.lb-rank{font-size:20px;min-width:26px;}
+.lb-av{width:36px;height:36px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.lb-info{flex:1;}
+.lb-name{font-size:14px;font-weight:600;color:var(--ink);}
+.lb-sub{font-size:11px;color:var(--ink3);}
+.lb-right{text-align:right;}
+.lb-val{font-family:'Clash Display',sans-serif;font-size:16px;font-weight:700;color:var(--v2);}
+.lb-unit{font-size:10px;color:var(--ink3);}
+
+/* REMINDERS MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:100;display:none;flex-direction:column;justify-content:flex-end;padding-bottom:calc(12px + var(--sb));}
+.modal-overlay.open{display:flex;}
+.modal-sheet{background:var(--bg2);border-radius:28px 28px 0 0;padding:22px;max-height:85dvh;overflow-y:auto;animation:slideUp .35s ease;}
+.modal-handle{width:36px;height:4px;background:var(--card2);border-radius:99px;margin:0 auto 18px;}
+.modal-title{font-family:'Clash Display',sans-serif;font-size:19px;font-weight:700;color:var(--ink);margin-bottom:16px;}
+.rem-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);}
+.rem-item:last-child{border:none;}
+.rem-name{flex:1;font-size:14px;font-weight:600;color:var(--ink);}
+.tog{position:relative;width:44px;height:24px;flex-shrink:0;}
+.tog input{opacity:0;width:0;height:0;}
+.tog-sl{position:absolute;inset:0;border-radius:99px;background:var(--card2);border:1.5px solid var(--line2);cursor:pointer;transition:background .25s;}
+.tog input:checked+.tog-sl{background:var(--v);border-color:var(--v);}
+.tog-sl::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
+.tog input:checked+.tog-sl::after{transform:translateX(20px);}
+
+/* DETAIL SCREEN */
+#detail{position:fixed;inset:0;background:var(--bg);z-index:90;display:none;flex-direction:column;animation:slideR .3s ease;}
+#detail.open{display:flex;}
+@keyframes slideR{from{transform:translateX(100%)}to{transform:none}}
+.det-head{padding:calc(var(--st)+12px) 18px 12px;display:flex;align-items:center;gap:13px;border-bottom:1px solid var(--line);flex-shrink:0;}
+.det-back{width:38px;height:38px;border-radius:50%;background:var(--card);border:none;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink2);}
+.det-icon{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.det-title{font-family:'Clash Display',sans-serif;font-size:18px;font-weight:700;color:var(--ink);}
+.det-meta{font-size:12px;color:var(--ink3);margin-top:2px;}
+.det-body{flex:1;overflow-y:auto;padding:16px 14px calc(30px + var(--sb));-webkit-overflow-scrolling:touch;}
+.det-body::-webkit-scrollbar{width:2px;}
+
+/* Detail forms */
+.mc{background:var(--card2);border-radius:var(--rsm);padding:12px;border:1px solid var(--line);text-align:center;margin-bottom:8px;}
+.mc-val{font-family:'Clash Display',sans-serif;font-size:22px;font-weight:700;color:var(--g2);}
+.mc-label{font-size:11px;color:var(--ink3);margin-top:2px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fg-lbl{font-size:11px;font-weight:600;color:var(--ink3);}
+.f-inp{background:var(--card2);border:1.5px solid var(--line);border-radius:var(--rsm);padding:11px 12px;color:var(--ink);font-size:15px;font-family:'Cabinet Grotesk',sans-serif;outline:none;width:100%;transition:border-color .2s;}
+.f-inp:focus{border-color:var(--v);}
+.f-inp::placeholder{color:var(--ink3);}
+.f-btn{width:100%;padding:13px;border:none;border-radius:var(--rsm);color:#fff;font-family:'Clash Display',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .15s;}
+.f-btn:active{opacity:.85;}
+.run-hist{background:var(--card);border-radius:var(--rc);padding:14px;margin-bottom:10px;border:1px solid var(--line);position:relative;overflow:hidden;}
+.run-hist-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.run-hist-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.run-grad{position:absolute;left:0;bottom:0;right:0;height:3px;background:linear-gradient(90deg,var(--g),var(--b));}
+.book-done{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);}
+.book-done:last-child{border:none;}
+.bd-cover{width:40px;height:55px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+
+/* ADD HABIT SHEET */
+#add-sheet{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:100;display:none;flex-direction:column;justify-content:flex-end;padding-bottom:calc(12px + var(--sb));}
+#add-sheet.open{display:flex;}
+.preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.preset-btn{background:var(--card);border-radius:var(--rsm);padding:14px 10px;text-align:center;cursor:pointer;border:1.5px solid var(--line);transition:all .2s;}
+.preset-btn:active{background:var(--card2);}
+.preset-btn .pi{font-size:26px;margin-bottom:5px;}
+.preset-btn .pn{font-size:11px;color:var(--ink2);}
+
+/* PAYWALL */
+#paywall{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);z-index:150;display:none;flex-direction:column;justify-content:flex-end;padding-bottom:calc(16px + var(--sb));}
+#paywall.open{display:flex;}
+.pw-sheet{background:var(--bg2);border-radius:28px 28px 0 0;padding:24px;position:relative;}
+.pw-x{position:absolute;top:16px;right:16px;width:32px;height:32px;background:var(--card);border:none;border-radius:50%;font-size:16px;cursor:pointer;color:var(--ink2);display:flex;align-items:center;justify-content:center;}
+.pw-handle{width:36px;height:4px;background:var(--card2);border-radius:99px;margin:0 auto 18px;}
+.pw-title{font-family:'Clash Display',sans-serif;font-size:24px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:5px;}
+.pw-sub{font-size:14px;color:var(--ink2);text-align:center;margin-bottom:20px;}
+.pw-plans{display:flex;gap:8px;margin-bottom:16px;}
+.pw-plan{flex:1;border:2px solid var(--line2);border-radius:var(--rc);padding:13px 10px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.pw-plan.hot{border-color:var(--v);background:rgba(139,92,246,.1);}
+.pw-plan-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--v);color:#fff;font-size:10px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap;}
+.pw-price{font-family:'Clash Display',sans-serif;font-size:21px;font-weight:700;color:var(--ink);}
+.pw-period{font-size:11px;color:var(--ink3);margin-bottom:3px;}
+.pw-pname{font-size:12px;color:var(--ink2);}
+.pw-feats{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.pw-feat{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink2);}
+.pw-feat-ic{width:26px;height:26px;border-radius:7px;background:rgba(139,92,246,.12);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+.pw-cta{width:100%;padding:16px;background:var(--v);color:#fff;border:none;border-radius:var(--rc);font-family:'Clash Display',sans-serif;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:8px;box-shadow:0 8px 28px rgba(139,92,246,.35);transition:transform .15s;}
+.pw-cta:active{transform:scale(.97);}
+.pw-note{font-size:12px;color:var(--ink3);text-align:center;}
+
+/* PROFILE PAGE */
+.prof-av{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--v),#a855f7);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:32px;}
+.prof-name{font-family:'Clash Display',sans-serif;font-size:21px;font-weight:700;text-align:center;color:var(--ink);}
+.prof-sub{font-size:13px;color:var(--ink3);text-align:center;margin-top:3px;margin-bottom:18px;}
+.prof-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line2);border-radius:12px;overflow:hidden;margin:0 14px 16px;}
+.ps{background:var(--card);padding:12px 8px;text-align:center;}
+.ps-v{font-family:'Clash Display',sans-serif;font-size:20px;font-weight:700;color:var(--ink);}
+.ps-l{font-size:10px;color:var(--ink3);margin-top:2px;}
+.menu-item{display:flex;align-items:center;gap:13px;padding:15px 18px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s;}
+.menu-item:active{background:var(--card);}
+.mi-icon{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.mi-label{flex:1;font-size:15px;color:var(--ink);font-weight:500;}
+.mi-right{font-size:13px;color:var(--ink3);}
+.badge-pro{background:var(--v);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;}
+
+/* NAV */
+#nav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav)+var(--sb));padding-bottom:var(--sb);padding-top:4px;background:rgba(13,13,18,.94);backdrop-filter:blur(20px);border-top:1px solid var(--line);display:none;align-items:center;z-index:80;}
+.nav-items{display:flex;width:100%;padding:0 6px;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border:none;background:none;cursor:pointer;border-radius:13px;transition:background .15s;}
+.nav-btn:active{background:var(--card);}
+.nav-ic{font-size:22px;transition:transform .2s;}
+.nav-btn.on .nav-ic{transform:scale(1.12);}
+.nav-lbl{font-size:10px;color:var(--ink3);font-weight:600;transition:color .2s;}
+.nav-btn.on .nav-lbl{color:var(--v2);}
+
+/* TOAST */
+#toast{position:fixed;top:calc(var(--st)+12px);left:50%;transform:translateX(-50%) translateY(-80px);background:var(--card2);color:var(--ink);padding:10px 18px;border-radius:99px;font-size:14px;font-weight:500;border:1px solid var(--line2);z-index:400;white-space:nowrap;backdrop-filter:blur(12px);transition:transform .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none;}
+#toast.on{transform:translateX(-50%) translateY(0);}
+
+/* DATA SYNC INDICATOR */
+.sync-bar{height:2px;background:linear-gradient(90deg,var(--tg),var(--v));position:fixed;top:0;left:0;right:0;z-index:500;display:none;animation:syncPulse 1.5s infinite;}
+@keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sync-bar.on{display:block;}
+
+/* EXPORT / IMPORT section */
+.export-btn{display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--card);border-radius:var(--rsm);border:1.5px solid var(--line2);cursor:pointer;transition:all .2s;font-size:14px;font-weight:600;color:var(--ink2);}
+.export-btn:active{background:var(--card2);}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══════════════ AUTH SCREEN ══════════════ -->
+<div id="auth-screen">
+  <div class="auth-logo">🔥</div>
+  <div class="auth-title clash">Добро пожаловать в Streakly</div>
+  <div class="auth-sub">Трекер привычек с ИИ-инсайтами, соревнованиями с друзьями и интеграцией со Strava</div>
+
+  <button class="tg-btn" onclick="loginTelegram()">
+    <span class="tg-btn-icon">✈️</span>
+    Войти через Telegram
+  </button>
+  <div id="tg-widget-container" style="display:none;"></div>
+
+  <div class="auth-divider"><span>или</span></div>
+
+  <button class="guest-btn" onclick="loginGuest()">
+    Продолжить без аккаунта
+  </button>
+
+  <div class="auth-legal">
+    Нажимая «Войти», вы принимаете <a href="terms.html" target="_blank">Условия использования</a>
+    и соглашаетесь с <a href="privacy.html" target="_blank">Политикой конфиденциальности</a>
+    и <a href="consent.html" target="_blank">обработкой персональных данных</a>
+  </div>
+</div>
+
+<!-- ══════════════ PHONE MODAL ══════════════ -->
+<div id="phone-modal">
+  <div class="pm-sheet">
+    <div class="pm-handle"></div>
+    <div class="pm-title clash">📱 Номер телефона</div>
+    <div class="pm-sub">Укажи номер телефона для восстановления доступа и синхронизации между устройствами</div>
+
+    <div class="pm-benefits">
+      <div class="pm-benefit">
+        <div class="pm-benefit-ic">🔄</div>
+        Синхронизация данных между устройствами
+      </div>
+      <div class="pm-benefit">
+        <div class="pm-benefit-ic">🔔</div>
+        SMS-напоминания если отключить Telegram
+      </div>
+      <div class="pm-benefit">
+        <div class="pm-benefit-ic">🔑</div>
+        Восстановление аккаунта при потере доступа
+      </div>
+    </div>
+
+    <input class="pm-inp" id="phone-inp" type="tel" placeholder="+7 700 123 4567" autocomplete="tel">
+    <button class="pm-btn" onclick="submitPhone()">Подтвердить номер</button>
+    <button class="pm-skip" onclick="skipPhone()">Пропустить — добавить позже</button>
+
+    <div class="pm-consent">
+      Номер телефона будет обработан согласно
+      <a href="consent.html" target="_blank">Согласию на обработку персональных данных</a>.
+      Мы не передаём его третьим лицам.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ ONBOARDING ══════════════ -->
+<div id="ob" style="display:none;">
+  <div class="ob-dots">
+    <div class="ob-dot on" id="d1"></div>
+    <div class="ob-dot" id="d2"></div>
+    <div class="ob-dot" id="d3"></div>
+  </div>
+
+  <!-- Step 1: Pick habits -->
+  <div class="ob-slide on" id="s1">
+    <div class="ob-emoji">🎯</div>
+    <h1 class="ob-h clash">Какие привычки хочешь выработать?</h1>
+    <p class="ob-p">Выбери одну или несколько. Можно добавить позже.</p>
+    <div class="chips" id="habit-chips">
+      <div class="chip on" data-t="run">🏃 Бег</div>
+      <div class="chip on" data-t="book">📚 Чтение</div>
+      <div class="chip" data-t="water">💧 Вода</div>
+      <div class="chip" data-t="meditate">🧘 Медитация</div>
+      <div class="chip" data-t="sleep">😴 Сон</div>
+      <div class="chip" data-t="journal">✍️ Дневник</div>
+      <div class="chip" data-t="nutrition">🥗 Питание</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="ob-btn" onclick="obGo(2)">Далее →</button>
+  </div>
+
+  <!-- Step 2: Set individual reminders -->
+  <div class="ob-slide" id="s2">
+    <div class="ob-emoji">⏰</div>
+    <h1 class="ob-h clash">Время напоминаний</h1>
+    <p class="ob-p">Каждая привычка — своё время. Бегаешь утром, читаешь вечером — мы запомним.</p>
+    <div id="time-list"></div>
+    <div class="spacer"></div>
+    <button class="ob-btn" onclick="obGo(3)">Далее →</button>
+  </div>
+
+  <!-- Step 3: 7 days free -->
+  <div class="ob-slide" id="s3">
+    <div class="ob-emoji">🚀</div>
+    <h1 class="ob-h clash">7 дней Pro — бесплатно</h1>
+    <p class="ob-p">Попробуй все возможности без ограничений. После — 2 990 ₸/мес или базовый план навсегда бесплатно.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
+      <div style="display:flex;align-items:center;gap:11px;padding:13px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--line);">
+        <span style="font-size:21px;">🔗</span>
+        <div><div style="font-size:14px;font-weight:600;color:var(--ink);">Интеграция со Strava</div><div style="font-size:12px;color:var(--ink3);">Авточекин при пробежке</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:13px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--line);">
+        <span style="font-size:21px;">🤖</span>
+        <div><div style="font-size:14px;font-weight:600;color:var(--ink);">ИИ-инсайты каждую неделю</div><div style="font-size:12px;color:var(--ink3);">Персональный анализ паттернов</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:13px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--line);">
+        <span style="font-size:21px;">⚔️</span>
+        <div><div style="font-size:14px;font-weight:600;color:var(--ink);">Соревнования с друзьями</div><div style="font-size:12px;color:var(--ink3);">По каждой привычке отдельно</div></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button class="ob-btn" onclick="finishOb()">Начать бесплатно 🔥</button>
+    <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:-10px;margin-bottom:calc(8px + var(--sb));">Отмена в любой момент · Без автосписания</div>
+  </div>
+</div>
+
+<!-- ══════════════ SHELL ══════════════ -->
+<div id="shell">
+  <div class="sync-bar" id="sync-bar"></div>
+
+  <!-- ═══ HOME PAGE ═══ -->
+  <div class="page on" id="p-home">
+    <div class="ph">
+      <div class="ph-row">
+        <div>
+          <div class="ph-title clash" id="home-greeting">Привет! 👋</div>
+          <div class="ph-sub" id="today-lbl"></div>
+        </div>
+        <button class="ico-btn" onclick="openAdd()">＋</button>
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-row">
+        <div class="hero-fire">🔥</div>
+        <div class="hero-num clash" id="streak-num">0</div>
+        <div class="hero-unit">дней</div>
+      </div>
+      <div class="hero-grid">
+        <div><div class="hg-l">Сегодня</div><div class="hg-v clash" id="today-ratio">0/0</div></div>
+        <div><div class="hg-l">Рекорд</div><div class="hg-v clash" id="best-streak">0🏆</div></div>
+        <div><div class="hg-l">Всего ✓</div><div class="hg-v clash" id="total-checkins">0</div></div>
+      </div>
+    </div>
+
+    <div class="prog">
+      <div class="prog-row"><span>Прогресс дня</span><strong id="prog-pct">0%</strong></div>
+      <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title clash">Сегодняшние привычки</div>
+        <div class="sec-act" onclick="openAdd()">+ Добавить</div>
+      </div>
+      <div id="habits-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══ STATS PAGE ═══ -->
+  <div class="page" id="p-stats">
+    <div class="ph"><div class="ph-row"><div class="ph-title clash">Статистика</div></div></div>
+
+    <div class="chart-card" style="margin:14px 14px 0;">
+      <div class="cc-title">Выполнение по дням (7 дней)</div>
+      <div style="display:flex;align-items:flex-end;gap:5px;height:70px;" id="week-bars"></div>
+      <div style="display:flex;gap:5px;margin-top:6px;" id="week-lbls"></div>
+    </div>
+
+    <div class="chart-card" style="margin-top:10px;">
+      <div class="cc-title">Настроение недели</div>
+      <div style="display:flex;justify-content:space-around;" id="mood-tl"></div>
+    </div>
+
+    <div class="sec" style="padding-top:14px;">
+      <div class="sec-head">
+        <div class="sec-title clash">Тепловая карта (28 дн)</div>
+        <div style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;background:rgba(245,158,11,.15);color:var(--o2);border:1px solid rgba(245,158,11,.25);">PRO</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:0 14px 14px;" id="heatmap"></div>
+    </div>
+  </div>
+
+  <!-- ═══ SOCIAL PAGE ═══ -->
+  <div class="page" id="p-social">
+    <div class="ph"><div class="ph-row"><div class="ph-title clash">Рейтинг</div><button class="ico-btn" onclick="toast('📨 Ссылка скопирована!')">👥</button></div></div>
+    <div class="sec" style="padding-top:14px;">
+      <div class="sec-head"><div class="sec-title clash">По привычке</div></div>
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none;" id="social-filter"></div>
+      <div id="leaderboard"></div>
+    </div>
+  </div>
+
+  <!-- ═══ PROFILE PAGE ═══ -->
+  <div class="page" id="p-profile">
+    <div class="ph"><div class="ph-row"><div class="ph-title clash">Профиль</div></div></div>
+    <div style="padding:20px 14px 0;">
+      <div class="prof-av" id="prof-av">👤</div>
+      <div class="prof-name clash" id="prof-name">Гость</div>
+      <div class="prof-sub" id="prof-sub">Присоединяйся через Telegram для синхронизации</div>
+    </div>
+    <div class="prof-stats">
+      <div class="ps"><div class="ps-v clash" id="p-streak">0🔥</div><div class="ps-l">Стрик</div></div>
+      <div class="ps"><div class="ps-v clash" id="p-rate">—</div><div class="ps-l">Выполнение</div></div>
+      <div class="ps"><div class="ps-v clash" id="p-total">0</div><div class="ps-l">Привычек</div></div>
+    </div>
+
+    <!-- Pro banner -->
+    <div style="margin:0 14px 14px;background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(168,85,247,.1));border:1px solid rgba(139,92,246,.3);border-radius:var(--rc);padding:16px;cursor:pointer;display:flex;align-items:center;gap:12px;" onclick="openPaywall()">
+      <span style="font-size:26px;">✨</span>
+      <div style="flex:1;"><div style="font-weight:700;color:var(--ink);font-size:15px;">Streakly Pro</div><div style="font-size:12px;color:var(--v3);">7 дней бесплатно · потом 2 990 ₸/мес</div></div>
+      <span style="color:var(--v2);font-size:18px;">›</span>
+    </div>
+
+    <!-- Menu -->
+    <div class="menu-item" onclick="openRemModal()">
+      <div class="mi-icon" style="background:rgba(245,158,11,.1);">🔔</div>
+      <div class="mi-label">Напоминания</div>
+      <div class="mi-right">›</div>
+    </div>
+    <div class="menu-item" onclick="exportData()">
+      <div class="mi-icon" style="background:rgba(16,185,129,.1);">📤</div>
+      <div class="mi-label">Экспорт данных</div>
+      <div class="mi-right">JSON</div>
+    </div>
+    <div class="menu-item" onclick="importData()">
+      <div class="mi-icon" style="background:rgba(59,130,246,.1);">📥</div>
+      <div class="mi-label">Импорт данных</div>
+      <div class="mi-right">›</div>
+    </div>
+    <div class="menu-item" onclick="loginTelegram()" id="tg-menu-item">
+      <div class="mi-icon" style="background:rgba(34,158,217,.1);">✈️</div>
+      <div class="mi-label">Подключить Telegram</div>
+      <div class="mi-right">›</div>
+    </div>
+    <div class="menu-item" onclick="connectStrava()">
+      <div class="mi-icon" style="background:rgba(249,115,22,.1);">🟠</div>
+      <div class="mi-label" id="strava-menu-label">Подключить Strava</div>
+      <div class="mi-right" id="strava-menu-right">›</div>
+    </div>
+    <div class="menu-item" onclick="showReferral()">
+      <div class="mi-icon" style="background:rgba(16,185,129,.1);">🤝</div>
+      <div class="mi-label">Пригласить друга</div>
+      <div class="mi-right" style="color:var(--g);font-size:12px;font-weight:600;">+7 дней Pro</div>
+    </div>
+    <div class="menu-item" onclick="window.open('privacy.html')">
+      <div class="mi-icon" style="background:rgba(139,92,246,.1);">🔒</div>
+      <div class="mi-label">Политика конфиденциальности</div>
+      <div class="mi-right">›</div>
+    </div>
+    <div class="menu-item" onclick="window.open('terms.html')">
+      <div class="mi-icon" style="background:rgba(139,92,246,.1);">📄</div>
+      <div class="mi-label">Условия использования</div>
+      <div class="mi-right">›</div>
+    </div>
+    <div class="menu-item" onclick="window.open('consent.html')">
+      <div class="mi-icon" style="background:rgba(16,185,129,.1);">✅</div>
+      <div class="mi-label">Согласие на обработку данных</div>
+      <div class="mi-right">›</div>
+    </div>
+    <div class="menu-item" onclick="showAIInsight()">
+      <div class="mi-icon" style="background:rgba(139,92,246,.1);">🤖</div>
+      <div class="mi-label">ИИ-инсайт недели</div>
+      <div class="mi-right" style="font-size:10px;font-weight:700;background:rgba(245,158,11,.15);color:var(--o2);padding:2px 8px;border-radius:99px;">PRO</div>
+    </div>
+    <div class="menu-item" onclick="confirmReset()">
+      <div class="mi-icon" style="background:rgba(239,68,68,.1);">🗑</div>
+      <div class="mi-label" style="color:var(--r);">Сбросить все данные</div>
+      <div class="mi-right">›</div>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<!-- NAV -->
+<div id="nav">
+  <div class="nav-items">
+    <button class="nav-btn on" onclick="goPage('home',this)"><div class="nav-ic">🏠</div><div class="nav-lbl">Главная</div></button>
+    <button class="nav-btn"    onclick="goPage('stats',this)"><div class="nav-ic">📊</div><div class="nav-lbl">Статистика</div></button>
+    <button class="nav-btn"    onclick="goPage('social',this)"><div class="nav-ic">⚔️</div><div class="nav-lbl">Рейтинг</div></button>
+    <button class="nav-btn"    onclick="goPage('profile',this)"><div class="nav-ic">👤</div><div class="nav-lbl">Профиль</div></button>
+  </div>
+</div>
+
+<!-- REMINDERS MODAL -->
+<div class="modal-overlay" id="rem-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title clash">🔔 Напоминания</div>
+    <div id="rem-list"></div>
+    <button style="width:100%;margin-top:16px;padding:14px;border:none;border-radius:var(--rsm);background:var(--v);color:#fff;font-family:'Clash Display',sans-serif;font-size:15px;font-weight:700;cursor:pointer;" onclick="closeRemModal()">Сохранить</button>
+  </div>
+</div>
+
+<!-- ADD HABIT SHEET -->
+<div id="add-sheet">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title clash">Добавить привычку</div>
+    <div class="preset-grid">
+      <div class="preset-btn" onclick="addPreset('run','🏃','Бег')"><div class="pi">🏃</div><div class="pn">Бег</div></div>
+      <div class="preset-btn" onclick="addPreset('book','📚','Чтение')"><div class="pi">📚</div><div class="pn">Чтение</div></div>
+      <div class="preset-btn" onclick="addPreset('water','💧','Вода')"><div class="pi">💧</div><div class="pn">Вода</div></div>
+      <div class="preset-btn" onclick="addPreset('meditate','🧘','Медитация')"><div class="pi">🧘</div><div class="pn">Медитация</div></div>
+      <div class="preset-btn" onclick="addPreset('sleep','😴','Сон')"><div class="pi">😴</div><div class="pn">Сон</div></div>
+      <div class="preset-btn" onclick="addPreset('journal','✍️','Дневник')"><div class="pi">✍️</div><div class="pn">Дневник</div></div>
+    </div>
+    <input class="f-inp" id="custom-inp" placeholder="Или напиши свою...">
+    <button style="width:100%;margin-top:10px;padding:13px;border:none;border-radius:var(--rsm);background:var(--v);color:#fff;font-family:'Clash Display',sans-serif;font-size:15px;font-weight:700;cursor:pointer;" onclick="addCustom()">Добавить</button>
+    <button style="width:100%;margin-top:8px;padding:10px;border:none;background:transparent;color:var(--ink3);font-size:14px;cursor:pointer;" onclick="closeAdd()">Отмена</button>
+  </div>
+</div>
+
+<!-- DETAIL SCREEN -->
+<div id="detail">
+  <div class="det-head">
+    <button class="det-back" onclick="closeDetail()">←</button>
+    <div class="det-icon" id="det-icon"></div>
+    <div>
+      <div class="det-title clash" id="det-title"></div>
+      <div class="det-meta" id="det-meta"></div>
+    </div>
+  </div>
+  <div class="det-body" id="det-body"></div>
+</div>
+
+<!-- PAYWALL -->
+<div id="paywall">
+  <div class="pw-sheet">
+    <button class="pw-x" onclick="closePW()">×</button>
+    <div class="pw-handle"></div>
+    <div class="pw-title clash">Streakly Pro ✨</div>
+    <div class="pw-sub">Разблокируй полный потенциал</div>
+    <div class="pw-plans">
+      <div class="pw-plan" data-plan="monthly" onclick="selPlan(this)">
+        <div class="pw-price clash">2 990</div>
+        <div class="pw-period">₸/месяц</div>
+        <div class="pw-pname">Стандарт</div>
+      </div>
+      <div class="pw-plan hot" data-plan="yearly" onclick="selPlan(this)">
+        <div class="pw-plan-badge">🔥 Выгоднее</div>
+        <div class="pw-price clash">1 990</div>
+        <div class="pw-period">₸/мес · год</div>
+        <div class="pw-pname">Годовой</div>
+      </div>
+      <div class="pw-plan" data-plan="family" onclick="selPlan(this)">
+        <div class="pw-price clash">5 990</div>
+        <div class="pw-period">₸/месяц</div>
+        <div class="pw-pname">Семья × 5</div>
+      </div>
+    </div>
+    <div class="pw-feats">
+      <div class="pw-feat"><div class="pw-feat-ic">🔗</div>Интеграции: Strava, Apple Health, Garmin</div>
+      <div class="pw-feat"><div class="pw-feat-ic">🤖</div>ИИ-инсайты еженедельно</div>
+      <div class="pw-feat"><div class="pw-feat-ic">📊</div>Тепловая карта за год</div>
+      <div class="pw-feat"><div class="pw-feat-ic">🔄</div>Синхронизация между устройствами</div>
+      <div class="pw-feat"><div class="pw-feat-ic">📤</div>Экспорт и резервные копии</div>
+    </div>
+    <button class="pw-cta" onclick="closePW();openPaymentPage(document.querySelector('.pw-plan.hot')?.dataset?.plan || 'monthly')">Попробовать 7 дней бесплатно</button>
+    <div class="pw-note">Потом — 2 990 ₸/мес · Отмена в любой момент</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════
+   CONFIG — замени на свои значения после деплоя
+════════════════════════════════════════════════════════ */
+const BACKEND_URL = 'https://api.streakly.app'; // ← твой API URL
+const BOT_NAME    = 'streakly_kz_bot';          // ← username твоего бота
+
+/* ════════════════════════════════════════════════════════
+   PERSISTENCE — IndexedDB v3
+   FIXES:
+   ✅ Indexes on checkins for fast date/habitId queries
+   ✅ recalcStreakFromCheckins() called on every startApp()
+   ✅ addToRing() writes to IndexedDB
+   ✅ QuotaExceededError handled gracefully
+   ✅ Export / Import full data as JSON
+   ✅ User profile (Telegram auth) stored in meta
+════════════════════════════════════════════════════════ */
+const DB_NAME = 'streakly-db';
+const DB_VER  = 3; // bumped from 2→3: added indexes + user store
+
+let db;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+
+    req.onupgradeneeded = e => {
+      const d   = e.target.result;
+      const old = e.oldVersion;
+
+      // Always create missing stores (never overwrite existing)
+      const stores = {
+        'habits':    { opts: { keyPath: 'id' },                indexes: [] },
+        'checkins':  { opts: { keyPath: 'key' },               indexes: [['date','date'],['habitId','habitId']] },
+        'run-log':   { opts: { keyPath: 'id', autoIncrement:true }, indexes: [['date','date']] },
+        'books':     { opts: { keyPath: 'id', autoIncrement:true }, indexes: [] },
+        'water-log': { opts: { keyPath: 'key' },               indexes: [['date','date']] },
+        'mood-log':  { opts: { keyPath: 'key' },               indexes: [['date','date']] },
+        'meta':      { opts: { keyPath: 'key' },               indexes: [] },
+      };
+
+      Object.entries(stores).forEach(([name, { opts, indexes }]) => {
+        let store;
+        if (!d.objectStoreNames.contains(name)) {
+          store = d.createObjectStore(name, opts);
+        } else {
+          // Get existing store from transaction to add missing indexes
+          store = e.target.transaction.objectStore(name);
+        }
+        // Add missing indexes (safe — won't duplicate)
+        indexes.forEach(([idxName, keyPath]) => {
+          if (!store.indexNames.contains(idxName)) {
+            store.createIndex(idxName, keyPath, { unique: false });
+          }
+        });
+      });
+    };
+
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror   = () => rej(req.error);
+  });
+}
+
+/* Safe wrappers with QuotaExceededError handling */
+const _tx  = (s, m='readonly') => db.transaction(s, m).objectStore(s);
+const dbGet    = (s, k)  => new Promise((r,j) => { const q=_tx(s).get(k);              q.onsuccess=()=>r(q.result);  q.onerror=()=>j(q.error); });
+const dbGetAll = (s)     => new Promise((r,j) => { const q=_tx(s).getAll();             q.onsuccess=()=>r(q.result);  q.onerror=()=>j(q.error); });
+const dbGetIdx = (s,i,k) => new Promise((r,j) => { const q=_tx(s).index(i).getAll(k);  q.onsuccess=()=>r(q.result);  q.onerror=()=>j(q.error); });
+
+function dbPut(s, v) {
+  return new Promise((r,j) => {
+    const q = _tx(s,'readwrite').put(v);
+    q.onsuccess = () => r(q.result);
+    q.onerror   = e => {
+      if (e.target.error?.name === 'QuotaExceededError') {
+        toast('⚠️ Хранилище почти заполнено. Экспортируй данные!');
+        r(null); // don't crash, just warn
+      } else { j(e.target.error); }
+    };
+  });
+}
+const dbAdd = (s, v)  => new Promise((r,j) => { const q=_tx(s,'readwrite').add(v);    q.onsuccess=()=>r(q.result);  q.onerror=()=>j(q.error); });
+const dbDel = (s, k)  => new Promise((r,j) => { const q=_tx(s,'readwrite').delete(k); q.onsuccess=()=>r();          q.onerror=()=>j(q.error); });
+
+const todayKey = () => new Date().toISOString().split('T')[0];
+
+/* ════════════════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════════════════ */
+let habits = [];
+let selTypes = ['run', 'book'];
+let currentUser = null; // { id, name, username, phone, isGuest }
+
+const DEFS = {
+  run:      { icon:'🏃', name:'Бег',       color:'#10b981', bg:'rgba(16,185,129,.12)',  defTime:'07:00' },
+  book:     { icon:'📚', name:'Чтение',    color:'#f59e0b', bg:'rgba(245,158,11,.12)',  defTime:'21:00' },
+  water:    { icon:'💧', name:'Вода',      color:'#3b82f6', bg:'rgba(59,130,246,.12)',  defTime:'09:00' },
+  meditate: { icon:'🧘', name:'Медитация', color:'#a855f7', bg:'rgba(168,85,247,.12)', defTime:'06:30' },
+  sleep:    { icon:'😴', name:'Сон',       color:'#6366f1', bg:'rgba(99,102,241,.12)',  defTime:'22:30' },
+  journal:  { icon:'✍️', name:'Дневник',  color:'#ec4899', bg:'rgba(236,72,153,.12)',  defTime:'22:00' },
+  nutrition:{ icon:'🥗', name:'Питание',   color:'#84cc16', bg:'rgba(132,204,22,.12)',  defTime:'12:00' },
+};
+
+let RUNS = [
+  { id:1, date:'2025-04-29', dist:5.2,  dur:'28:14', pace:'5:26', hr:152 },
+  { id:2, date:'2025-04-27', dist:8.0,  dur:'44:08', pace:'5:31', hr:158 },
+  { id:3, date:'2025-04-25', dist:3.5,  dur:'18:55', pace:'5:24', hr:145 },
+  { id:4, date:'2025-04-22', dist:10.0, dur:'57:30', pace:'5:45', hr:162 },
+];
+let BOOKS = [
+  { id:1, title:'Атомные привычки',  author:'Джеймс Клир',    emoji:'📗', pages:320, read:286, started:'2025-04-10', done:false },
+  { id:2, title:'Думай медленно…', author:'Даниэль Канеман',  emoji:'📘', pages:418, read:418, started:'2025-03-01', doneDate:'2025-03-30', done:true, rating:5 },
+  { id:3, title:'Сила воли',         author:'К. Макгонигал',   emoji:'📙', pages:270, read:270, started:'2025-02-05', doneDate:'2025-02-28', done:true, rating:4 },
+];
+
+const SOCIAL_DATA = {
+  run:      { unit:'км',   data:[{n:'Ты',av:'👤',v:47.2,me:true},{n:'Данияр',av:'🧑',v:38.5},{n:'Аружан',av:'👩',v:22.1},{n:'Максат',av:'👨',v:19.0}] },
+  book:     { unit:'стр',  data:[{n:'Аружан',av:'👩',v:312},{n:'Ты',av:'👤',v:286,me:true},{n:'Данияр',av:'🧑',v:180}] },
+  water:    { unit:'л',    data:[{n:'Данияр',av:'🧑',v:2.4},{n:'Ты',av:'👤',v:1.9,me:true},{n:'Аружан',av:'👩',v:1.6}] },
+  meditate: { unit:'мин',  data:[{n:'Ты',av:'👤',v:120,me:true},{n:'Максат',av:'👨',v:95},{n:'Данияр',av:'🧑',v:60}] },
+};
+
+/* ════════════════════════════════════════════════════════
+   AUTH — Telegram Login
+════════════════════════════════════════════════════════ */
+function loginTelegram() {
+  /*
+   * Telegram Login Widget — автоматически инициализируется при загрузке страницы.
+   * Кнопка в auth-screen вызывает виджет через window.TelegramLoginWidget.
+   * После авторизации Telegram вызывает window.onTelegramAuth(user).
+   *
+   * Для активации:
+   * 1. Замени BOT_NAME выше на username своего бота (без @)
+   * 2. Виджет подгружается динамически ниже в initTelegramWidget()
+   */
+  initTelegramWidget();
+}
+
+function initTelegramWidget() {
+  // Удаляем старый скрипт если есть
+  const old = document.getElementById('tg-widget-script');
+  if (old) old.remove();
+
+  const s = document.createElement('script');
+  s.id = 'tg-widget-script';
+  s.async = true;
+  s.src = 'https://telegram.org/js/telegram-widget.js?22';
+  s.setAttribute('data-telegram-login', BOT_NAME);
+  s.setAttribute('data-size', 'large');
+  s.setAttribute('data-onauth', 'onTelegramWidgetAuth(user)');
+  s.setAttribute('data-request-access', 'write');
+  s.setAttribute('data-userpic', 'false');
+
+  // Вставляем скрипт — он сам отрендерит кнопку
+  document.getElementById('tg-widget-container').appendChild(s);
+}
+
+// Вызывается Telegram Widget после успешной авторизации
+async function onTelegramWidgetAuth(tgUser) {
+  showSyncBar();
+  try {
+    // Верифицируем на бэкенде и получаем токен
+    const resp = await fetch(BACKEND_URL + '/auth/telegram', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tgUser),
+    });
+    if (!resp.ok) throw new Error('Auth failed: ' + resp.status);
+    const data = await resp.json();
+
+    // Сохраняем токен для последующих запросов
+    const user = {
+      ...data.user,
+      token: data.token,
+      photo: tgUser.photo_url ? '🖼' : '👤',
+      name: data.user.name || tgUser.first_name,
+      tgConnected: true,
+      isGuest: false,
+    };
+    await onTelegramAuth(user);
+
+    // Применяем реф. код если был в URL
+    const ref = new URLSearchParams(location.search).get('ref');
+    if (ref) {
+      await fetch(BACKEND_URL + '/referral/apply?ref_code=' + ref, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + user.token },
+      }).catch(() => {});
+      toast('🎁 Реферальный код применён! +7 дней Pro');
+    }
+
+    // Синхронизируем данные с сервером
+    await syncFromBackend(user.token);
+  } catch (e) {
+    console.error('Telegram auth error:', e);
+    toast('⚠️ Ошибка авторизации. Попробуй ещё раз.');
+  } finally {
+    hideSyncBar();
+  }
+}
+
+function onTelegramAuth(user) {
+  currentUser = user;
+  dbPut('meta', { key: 'user', val: user }).catch(() => {});
+
+  // Update UI
+  document.getElementById('prof-name').textContent = user.name || user.username;
+  document.getElementById('prof-av').textContent = user.photo || '👤';
+  document.getElementById('prof-sub').textContent = '@' + user.username + ' · Telegram подключён ✅';
+  document.getElementById('home-greeting').textContent = `Привет, ${user.name}! 👋`;
+
+  // Hide TG menu item (already connected)
+  document.getElementById('tg-menu-item').style.display = 'none';
+
+  // If auth-screen visible → show phone request
+  if (document.getElementById('auth-screen').style.display !== 'none') {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('phone-modal').classList.add('open');
+  } else {
+    toast('✅ Telegram подключён! Данные синхронизированы');
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   BACKEND SYNC — синхронизация с сервером
+════════════════════════════════════════════════════════ */
+async function syncFromBackend(token) {
+  if (!token) return;
+  showSyncBar();
+  try {
+    const resp = await fetch(BACKEND_URL + '/sync', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+
+    // Мерджим данные сервера в IndexedDB (server wins для конфликтов)
+    for (const h of (data.habits || [])) {
+      await dbPut('habits', h).catch(() => {});
+    }
+    for (const c of (data.checkins || [])) {
+      await dbPut('checkins', c).catch(() => {});
+    }
+    for (const r of (data.run_log || [])) {
+      await dbPut('run-log', r).catch(() => {});
+    }
+    for (const b of (data.books || [])) {
+      await dbPut('books', b).catch(() => {});
+    }
+    toast('🔄 Данные синхронизированы');
+  } catch(e) {
+    console.warn('Sync error:', e);
+  } finally {
+    hideSyncBar();
+  }
+}
+
+async function postCheckinToBackend(habitId, dateStr) {
+  const token = currentUser?.token;
+  if (!token || currentUser?.isGuest) return;
+  try {
+    await fetch(BACKEND_URL + '/checkin', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+      },
+      body: JSON.stringify({ habit_id: habitId, date: dateStr, timestamp: Date.now() }),
+    });
+  } catch(e) {
+    console.warn('Checkin sync error:', e);
+  }
+}
+
+async function loadAIInsight() {
+  const token = currentUser?.token;
+  if (!token || currentUser?.isGuest || !currentUser?.isPro) return null;
+  try {
+    const resp = await fetch(BACKEND_URL + '/insights', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.insights;
+  } catch(e) {
+    return null;
+  }
+}
+
+async function loadReferralStats() {
+  const token = currentUser?.token;
+  if (!token || currentUser?.isGuest) return null;
+  try {
+    const resp = await fetch(BACKEND_URL + '/referral/stats', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch(e) {
+    return null;
+  }
+}
+
+function openPaymentPage(plan) {
+  const token = currentUser?.token || '';
+  const uid   = currentUser?.id || '';
+  const url = `payment.html?plan=${plan}&uid=${uid}&api=${encodeURIComponent(BACKEND_URL)}&bot=${encodeURIComponent('https://t.me/' + BOT_NAME)}`;
+  window.open(url, '_blank');
+}
+
+function loginGuest() {
+  currentUser = { id: 'guest_' + Date.now(), name: 'Гость', isGuest: true };
+  dbPut('meta', { key: 'user', val: currentUser }).catch(() => {});
+  document.getElementById('auth-screen').style.display = 'none';
+  proceedToApp();
+}
+
+function submitPhone() {
+  const phone = document.getElementById('phone-inp').value.trim();
+  if (!phone || phone.length < 10) { toast('⚠️ Введи корректный номер'); return; }
+  if (currentUser) {
+    currentUser.phone = phone;
+    dbPut('meta', { key: 'user', val: currentUser }).catch(() => {});
+  }
+  document.getElementById('phone-modal').classList.remove('open');
+  toast('✅ Номер сохранён · Данные защищены');
+  proceedToApp();
+}
+function skipPhone() {
+  document.getElementById('phone-modal').classList.remove('open');
+  toast('ℹ️ Номер можно добавить позже в профиле');
+  proceedToApp();
+}
+
+function proceedToApp() {
+  // Check if already onboarded
+  openDB().then(async () => {
+    let meta = null;
+    try { meta = await dbGet('meta', 'onboarded'); } catch(e) {}
+    if (meta?.val) {
+      await restoreAndStart();
+    } else {
+      showOnboarding();
+    }
+  });
+}
+
+function showOnboarding() {
+  document.getElementById('ob').style.display = 'flex';
+}
+
+/* ════════════════════════════════════════════════════════
+   ONBOARDING
+════════════════════════════════════════════════════════ */
+let obStep = 1;
+
+document.querySelectorAll('#habit-chips .chip').forEach(c => {
+  c.onclick = () => {
+    c.classList.toggle('on');
+    selTypes = [...document.querySelectorAll('#habit-chips .chip.on')].map(x => x.dataset.t);
+    if (obStep === 2) renderTimeList();
+  };
+});
+
+function renderTimeList() {
+  const el = document.getElementById('time-list');
+  el.innerHTML = '';
+  selTypes.forEach(t => {
+    const d = DEFS[t];
+    el.innerHTML += `
+      <div class="time-row">
+        <span style="font-size:20px;width:28px;text-align:center;">${d.icon}</span>
+        <span style="flex:1;font-size:15px;font-weight:700;color:var(--ink);">${d.name}</span>
+        <input type="time" class="time-inp" value="${d.defTime}" id="ot-${t}">
+      </div>`;
+  });
+}
+
+function obGo(step) {
+  document.getElementById('s'+obStep).classList.remove('on');
+  document.getElementById('d'+obStep).classList.remove('on');
+  for (let i=1; i<=step; i++) document.getElementById('d'+i).classList.add('on');
+  obStep = step;
+  document.getElementById('s'+step).classList.add('on');
+  if (step === 2) renderTimeList();
+}
+
+async function finishOb() {
+  habits = selTypes.map((type, i) => {
+    const d = DEFS[type] || { color:'#8b5cf6', bg:'rgba(139,92,246,.12)', defTime:'09:00' };
+    const tEl = document.getElementById('ot-'+type);
+    return {
+      id: type + '-' + Date.now() + i,
+      type, name: d.name, icon: d.icon, color: d.color, bg: d.bg,
+      reminderTime: tEl ? tEl.value : d.defTime,
+      reminderOn: true,
+      streak: 0,        // ← always start at 0, recalc from checkins
+      bestStreak: 0,
+      done: false,
+      createdAt: new Date().toISOString(),
+    };
+  });
+
+  for (const h of habits) await dbPut('habits', h);
+
+  // Seed sample data (safe: add() throws if id exists, we catch)
+  for (const r of RUNS) {
+    try { await dbAdd('run-log', { date:r.date, dist:r.dist, dur:r.dur, pace:r.pace, hr:r.hr }); } catch(e) {}
+  }
+  for (const b of BOOKS) {
+    try { await dbAdd('books', { title:b.title, author:b.author, emoji:b.emoji, pages:b.pages, read:b.read, started:b.started, done:b.done, doneDate:b.doneDate||null, rating:b.rating||0 }); } catch(e) {}
+  }
+  await dbPut('meta', { key:'onboarded', val:true, version: DB_VER });
+
+  document.getElementById('ob').style.cssText = 'opacity:0;transition:opacity .5s;pointer-events:none;';
+  setTimeout(startApp, 500);
+}
+
+/* ════════════════════════════════════════════════════════
+   CRITICAL FIX #1 — recalcStreakFromCheckins()
+   Rebuilds streak from actual IndexedDB checkins records.
+   Called at every startApp() — not from in-memory array.
+════════════════════════════════════════════════════════ */
+async function recalcStreakFromCheckins(habit) {
+  let allCheckins;
+  try {
+    // Use index for performance — no full table scan
+    allCheckins = await dbGetIdx('checkins', 'habitId', habit.id);
+  } catch(e) {
+    // Index not available (old DB) → fallback
+    const all = await dbGetAll('checkins').catch(() => []);
+    allCheckins = all.filter(c => c.habitId === habit.id);
+  }
+
+  if (!allCheckins.length) {
+    habit.streak = 0;
+    return 0;
+  }
+
+  // Sort dates descending
+  const dates = allCheckins
+    .map(c => c.date)
+    .filter(Boolean)
+    .sort()
+    .reverse();
+
+  let streak = 0;
+  const today    = todayKey();
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+  // Streak must start from today or yesterday
+  if (dates[0] !== today && dates[0] !== yesterday) {
+    habit.streak = 0;
+    return 0;
+  }
+
+  let expected = dates[0];
+  for (const d of dates) {
+    if (d === expected) {
+      streak++;
+      const dt = new Date(expected);
+      dt.setDate(dt.getDate() - 1);
+      expected = dt.toISOString().split('T')[0];
+    } else {
+      break;
+    }
+  }
+
+  habit.streak = streak;
+  if (streak > (habit.bestStreak || 0)) {
+    habit.bestStreak = streak;
+  }
+  return streak;
+}
+
+/* ════════════════════════════════════════════════════════
+   START APP
+════════════════════════════════════════════════════════ */
+async function startApp() {
+  document.getElementById('ob').style.display = 'none';
+  document.getElementById('shell').style.display = 'flex';
+  document.getElementById('nav').style.display = 'flex';
+  document.getElementById('today-lbl').textContent = new Date().toLocaleDateString('ru-RU', { weekday:'long', day:'numeric', month:'long' });
+
+  // ✅ FIX #1 — Recalc ALL streaks from real checkin data
+  showSyncBar();
+  for (const h of habits) {
+    try {
+      await recalcStreakFromCheckins(h);
+      const ci = await dbGet('checkins', h.id + '-' + todayKey());
+      h.done = !!ci;
+    } catch(e) { h.done = false; }
+    // Persist updated streak back to DB
+    await dbPut('habits', h).catch(() => {});
+  }
+  hideSyncBar();
+
+  // Load persisted run/book data
+  try { const runs = await dbGetAll('run-log'); if (runs.length) RUNS = runs; } catch(e) {}
+  try { const books = await dbGetAll('books');  if (books.length) BOOKS = books; } catch(e) {}
+
+  // Load water today
+  try {
+    const wd = await dbGet('water-log', 'water-' + todayKey());
+    if (wd) waterToday = wd.ml || 0;
+  } catch(e) {}
+
+  // Load med today
+  try {
+    const md = await dbGet('mood-log', 'med-' + todayKey());
+    if (md) medToday = md.min || 0;
+  } catch(e) {}
+
+  updateGlobalStats();
+  renderHabits();
+  updateProgress();
+  buildWeekBars();
+  buildMoodTL();
+  buildHeatmap();
+  buildSocial();
+  buildRemList();
+  updateProfile();
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+
+  // Проверяем статус Strava и Pro в фоне
+  if (currentUser && !currentUser.isGuest) {
+    checkStravaStatus().catch(() => {});
+    // Показываем Pro-статус в профиле
+    if (currentUser.isPro) {
+      const banner = document.querySelector('.pw-plan.hot, [onclick="openPaywall()"]');
+      if (banner) {
+        banner.style.background = 'rgba(16,185,129,.1)';
+        banner.style.borderColor = 'rgba(16,185,129,.3)';
+        banner.querySelector('div')?.childNodes[0] && (banner.querySelector('div').textContent = '✨ Pro активен до ' + (new Date(currentUser.proUntil).toLocaleDateString('ru-RU') || '—'));
+      }
+    }
+    // Синхронизируем данные с сервером раз в час
+    const lastSync = localStorage.getItem('streakly_last_sync');
+    if (!lastSync || Date.now() - parseInt(lastSync) > 3600000) {
+      syncFromBackend(currentUser.token).then(() => {
+        localStorage.setItem('streakly_last_sync', Date.now().toString());
+      }).catch(() => {});
+    }
+  }
+}
+
+async function restoreAndStart() {
+  try { habits = await dbGetAll('habits'); } catch(e) { habits = []; }
+  await startApp();
+}
+
+/* ════════════════════════════════════════════════════════
+   GLOBAL STATS — across all habits
+════════════════════════════════════════════════════════ */
+function updateGlobalStats() {
+  const maxStreak = habits.length ? Math.max(...habits.map(h => h.streak)) : 0;
+  const bestStreak = habits.length ? Math.max(...habits.map(h => h.bestStreak || 0)) : 0;
+  document.getElementById('streak-num').textContent = maxStreak;
+  document.getElementById('best-streak').textContent = bestStreak + '🏆';
+
+  // Total checkins count
+  dbGetAll('checkins').then(all => {
+    document.getElementById('total-checkins').textContent = all.length;
+  }).catch(() => {});
+}
+
+/* ════════════════════════════════════════════════════════
+   HABITS RENDER
+════════════════════════════════════════════════════════ */
+function renderHabits() {
+  const el = document.getElementById('habits-list');
+  el.innerHTML = '';
+  habits.forEach(h => {
+    const div = document.createElement('div');
+    div.className = 'hc' + (h.done ? ' done' : '');
+    div.id = 'hc-' + h.id;
+    div.innerHTML = `
+      <div class="hc-main" onclick="tapHabit(event,'${h.id}')">
+        <div class="hc-icon" style="background:${h.bg}">${h.icon}</div>
+        <div class="hc-info">
+          <div class="hc-name">${h.name}</div>
+          <div class="hc-meta">
+            <span class="hc-streak">🔥 ${h.streak} дн</span>
+            <span class="hc-time">⏰ ${h.reminderTime || ''}</span>
+          </div>
+        </div>
+        <div class="hc-check">${h.done ? '✓' : ''}</div>
+      </div>
+      <div class="hc-strip" id="strip-${h.id}">${buildStrip(h)}</div>`;
+    el.appendChild(div);
+
+    let pt;
+    div.addEventListener('pointerdown', () => pt = setTimeout(() => openDetail(h.id), 650));
+    div.addEventListener('pointerup',   () => clearTimeout(pt));
+    div.addEventListener('pointermove', () => clearTimeout(pt));
+  });
+}
+
+function tapHabit(e, id) {
+  if (e.target.closest('.strip-btn') || e.target.closest('.wbtn')) return;
+  const strip = document.getElementById('strip-' + id);
+  const card  = document.getElementById('hc-' + id);
+  // First tap: toggle done; second tap on already-done: open strip
+  if (card.classList.contains('done') && strip && !strip.classList.contains('on')) {
+    strip.classList.add('on'); return;
+  }
+  toggleHabit(id);
+}
+
+/* ════════════════════════════════════════════════════════
+   HABIT TOGGLE — writes to IndexedDB
+════════════════════════════════════════════════════════ */
+async function toggleHabit(id) {
+  const h = habits.find(x => x.id === id);
+  if (!h) return;
+  h.done = !h.done;
+  const key = h.id + '-' + todayKey();
+
+  if (h.done) {
+    await dbPut('checkins', { key, habitId: h.id, date: todayKey(), ts: Date.now() });
+    // Recalc streak from real data
+    await recalcStreakFromCheckins(h);
+    // Sync to backend in background
+    postCheckinToBackend(h.id, todayKey()).catch(() => {});
+    toast('✅ Отмечено! Стрик продолжается 🔥');
+    document.getElementById('strip-'+id)?.classList.add('on');
+  } else {
+    await dbDel('checkins', key).catch(() => {});
+    await recalcStreakFromCheckins(h);
+    toast('↩️ Отметка снята');
+    document.getElementById('strip-'+id)?.classList.remove('on');
+  }
+
+  await dbPut('habits', h).catch(() => {});
+
+  const card = document.getElementById('hc-'+id);
+  if (card) {
+    card.classList.toggle('done', h.done);
+    const chk = card.querySelector('.hc-check'); if (chk) chk.textContent = h.done ? '✓' : '';
+    const str = card.querySelector('.hc-streak'); if (str) str.textContent = `🔥 ${h.streak} дн`;
+  }
+  updateProgress();
+  updateGlobalStats();
+  updateProfile();
+}
+
+function updateProgress() {
+  const done = habits.filter(h => h.done).length;
+  const total = habits.length || 1;
+  const pct = Math.round(done/total*100);
+  document.getElementById('today-ratio').textContent = `${done}/${total}`;
+  document.getElementById('prog-pct').textContent = pct+'%';
+  document.getElementById('prog-fill').style.width = pct+'%';
+  if (pct === 100) setTimeout(() => toast('🏆 Все привычки! Идеальный день!'), 400);
+}
+
+function updateProfile() {
+  const done = habits.filter(h => h.done).length;
+  const total = habits.length || 1;
+  const maxStr = habits.length ? Math.max(...habits.map(h => h.streak)) : 0;
+  document.getElementById('p-streak').textContent  = maxStr + '🔥';
+  document.getElementById('p-rate').textContent    = Math.round(done/total*100) + '%';
+  document.getElementById('p-total').textContent   = habits.length;
+  if (currentUser && !currentUser.isGuest) {
+    document.getElementById('prof-name').textContent = currentUser.name || 'Пользователь';
+    document.getElementById('prof-av').textContent   = currentUser.photo || '👤';
+    document.getElementById('prof-sub').textContent  = '@' + (currentUser.username||'') + ' · Telegram ✅';
+    document.getElementById('home-greeting').textContent = `Привет, ${currentUser.name}! 👋`;
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   CRITICAL FIX #2 — Water & Med stored in IndexedDB
+════════════════════════════════════════════════════════ */
+let waterToday = 1400; // ml
+const waterGoal = 2000;
+let medToday = 15; // min
+const medGoal = 20;
+
+function buildStrip(h) {
+  switch (h.type) {
+    case 'run':      return buildRunStrip();
+    case 'book':     return buildBookStrip();
+    case 'water':    return buildRingStrip(waterToday, waterGoal, 'мл', 'var(--b)', h.id, ['+200мл','+350мл','+500мл'], [200,350,500], '💧');
+    case 'meditate': return buildRingStrip(medToday,   medGoal,   'мин','var(--v)', h.id, ['+5 мин','+10 мин'], [5,10], '🧘');
+    default: return `<div style="font-size:13px;color:var(--ink2);">Нажми ✓ чтобы отметить сегодня</div>`;
+  }
+}
+
+function buildRunStrip() {
+  const last = RUNS[0] || {};
+  const maxD = Math.max(...RUNS.map(r=>r.dist),1);
+  return `
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;font-weight:700;letter-spacing:.5px;">ПОСЛЕДНЯЯ ПРОБЕЖКА</div>
+    <div class="run-metrics">
+      <div class="rm"><div class="rm-v">${last.dist||'—'}</div><div class="rm-l">км</div></div>
+      <div class="rm"><div class="rm-v">${last.dur||'—'}</div><div class="rm-l">время</div></div>
+      <div class="rm"><div class="rm-v">${last.pace||'—'}</div><div class="rm-l">мин/км</div></div>
+      <div class="rm"><div class="rm-v">${last.hr||'—'}</div><div class="rm-l">уд/мин</div></div>
+    </div>
+    <div class="mini-bars">
+      ${RUNS.slice(0,7).map(r=>`<div class="mb" style="height:${Math.round(r.dist/maxD*100)}%;background:linear-gradient(180deg,var(--g),var(--b));opacity:.8;"></div>`).join('')}
+    </div>
+    <button class="strip-btn" onclick="openRunDetail();event.stopPropagation();">📊 Все пробежки →</button>`;
+}
+
+function buildBookStrip() {
+  const cur = BOOKS.find(b => !b.done);
+  const doneCnt = BOOKS.filter(b => b.done).length;
+  const pct = cur ? Math.round(cur.read/cur.pages*100) : 0;
+  return cur ? `
+    <div class="book-strip-card">
+      <div class="book-cover-sm" style="background:linear-gradient(135deg,#6d28d9,#2563eb);">${cur.emoji}</div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:2px;">${cur.title}</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:7px;">${cur.author}</div>
+        <div class="bprog-track"><div class="bprog-fill" style="width:${pct}%"></div></div>
+        <div style="font-size:11px;color:var(--ink3);">${cur.read} / ${cur.pages} стр · ${pct}%</div>
+      </div>
+    </div>
+    <button class="strip-btn" onclick="openBookDetail();event.stopPropagation();">📚 Библиотека (${doneCnt} прочитано) →</button>` :
+    `<button class="strip-btn" onclick="openBookDetail();event.stopPropagation();">📚 Библиотека (${doneCnt} прочитано) →</button>`;
+}
+
+function buildRingStrip(cur, goal, unit, color, hid, btnLabels, btnVals, emoji) {
+  const pct = Math.min(100, Math.round(cur/goal*100));
+  const r=28, circ=2*Math.PI*r, dash=circ*(1-pct/100);
+  const btns = btnLabels.map((l,i) => `<button class="wbtn" onclick="addToRing('${hid}',${btnVals[i]},'${unit}','${emoji}');event.stopPropagation();">${l}</button>`).join('');
+  return `
+    <div class="ring-row">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="${r}"/><circle class="ring-fill" cx="32" cy="32" r="${r}" stroke="${color}" stroke-dasharray="${circ}" stroke-dashoffset="${dash}"/></svg>
+        <div class="ring-center"><div class="ring-val">${pct}%</div><div class="ring-unit">цели</div></div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:3px;">${emoji} ${cur} / ${goal} ${unit}</div>
+        <div style="font-size:13px;color:var(--ink2);margin-bottom:7px;">Осталось ${Math.max(0,goal-cur)} ${unit}</div>
+        <div class="water-btns">${btns}</div>
+      </div>
+    </div>`;
+}
+
+/* ✅ FIX #2 — addToRing now writes to IndexedDB */
+async function addToRing(hid, val, unit, emoji) {
+  const h = habits.find(x => x.id === hid);
+  if (!h) return;
+
+  const today = todayKey();
+
+  if (h.type === 'water') {
+    waterToday = Math.min(waterToday + val, waterGoal * 1.5);
+    await dbPut('water-log', { key:'water-'+today, date:today, ml:waterToday, ts:Date.now() });
+    toast(`${emoji} ${waterToday}/${waterGoal} мл`);
+    // Auto-complete if goal reached
+    if (waterToday >= waterGoal && !h.done) {
+      h.done = true;
+      await dbPut('checkins', { key:h.id+'-'+today, habitId:h.id, date:today, ts:Date.now() });
+      await recalcStreakFromCheckins(h);
+      await dbPut('habits', h);
+      toast('🎉 Цель по воде достигнута!');
+    }
+  } else if (h.type === 'meditate') {
+    medToday = Math.min(medToday + val, medGoal * 2);
+    await dbPut('mood-log', { key:'med-'+today, date:today, min:medToday, ts:Date.now() });
+    toast(`${emoji} ${medToday}/${medGoal} мин`);
+    if (medToday >= medGoal && !h.done) {
+      h.done = true;
+      await dbPut('checkins', { key:h.id+'-'+today, habitId:h.id, date:today, ts:Date.now() });
+      await recalcStreakFromCheckins(h);
+      await dbPut('habits', h);
+      toast('🎉 Цель по медитации!');
+    }
+  }
+
+  // Rebuild strip
+  const stripEl = document.getElementById('strip-'+hid);
+  if (stripEl) stripEl.innerHTML = buildStrip(h);
+  updateProgress();
+}
+
+/* ════════════════════════════════════════════════════════
+   DETAIL SCREENS
+════════════════════════════════════════════════════════ */
+function openRunDetail() {
+  const h = habits.find(x => x.type === 'run') || { icon:'🏃', name:'Бег', bg:'rgba(16,185,129,.12)' };
+  openDetailFor(h, buildRunDetailHTML());
+}
+
+function buildRunDetailHTML() {
+  const total = RUNS.reduce((s,r) => s + r.dist, 0).toFixed(1);
+  const maxD  = Math.max(...RUNS.map(r => r.dist), 1);
+  return `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;">
+      <div class="mc"><div class="mc-val">${total}</div><div class="mc-label">км всего</div></div>
+      <div class="mc"><div class="mc-val">${RUNS.length}</div><div class="mc-label">пробежек</div></div>
+      <div class="mc"><div class="mc-val">5:31</div><div class="mc-label">ср темп</div></div>
+    </div>
+    <div class="chart-card" style="margin:0 0 16px;">
+      <div class="cc-title">Дистанция (км)</div>
+      <div style="display:flex;align-items:flex-end;gap:5px;height:66px;">
+        ${RUNS.map(r => `<div style="flex:1;height:${Math.round(r.dist/maxD*100)}%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--g),var(--b));min-height:4px;" title="${r.dist}km ${r.date}"></div>`).join('')}
+      </div>
+    </div>
+    <div class="chart-card" style="margin:0 0 16px;">
+      <div class="cc-title">➕ Добавить пробежку</div>
+      <div class="form-grid">
+        <div class="fg"><div class="fg-lbl">Дистанция (км)</div><input class="f-inp" id="r-dist" type="number" step="0.1" placeholder="5.0"></div>
+        <div class="fg"><div class="fg-lbl">Время (мм:сс)</div><input class="f-inp" id="r-dur" type="text" placeholder="28:00"></div>
+        <div class="fg"><div class="fg-lbl">Пульс (уд/мин)</div><input class="f-inp" id="r-hr" type="number" placeholder="150"></div>
+      </div>
+      <button class="f-btn" style="background:var(--g);" onclick="saveRun()">Сохранить</button>
+    </div>
+    <div style="font-family:'Clash Display',sans-serif;font-size:15px;font-weight:600;color:var(--ink);margin-bottom:10px;">История пробежек</div>
+    ${RUNS.map(r => `
+      <div class="run-hist">
+        <div class="run-hist-head">
+          <span style="font-size:13px;color:var(--ink3);">${r.date}</span>
+          <span style="font-family:'Clash Display',sans-serif;font-size:14px;font-weight:700;color:var(--g2);">${r.dist} км</span>
+        </div>
+        <div class="run-hist-grid">
+          <div class="rm"><div class="rm-v">${r.dur}</div><div class="rm-l">время</div></div>
+          <div class="rm"><div class="rm-v">${r.pace}</div><div class="rm-l">мин/км</div></div>
+          <div class="rm"><div class="rm-v">${r.hr}</div><div class="rm-l">уд/мин</div></div>
+        </div>
+        <div class="run-grad"></div>
+      </div>`).join('')}`;
+}
+
+async function saveRun() {
+  const dist = parseFloat(document.getElementById('r-dist').value) || 0;
+  const dur  = document.getElementById('r-dur').value || '';
+  const hr   = parseInt(document.getElementById('r-hr').value) || 0;
+  if (!dist) { toast('⚠️ Введи дистанцию'); return; }
+  const pts  = dur.split(':');
+  const secs = pts.length >= 2 ? parseInt(pts[0])*60 + parseInt(pts[1]) : 0;
+  const pace = dist > 0 && secs > 0 ? `${Math.floor(secs/dist/60)}:${String(Math.round(secs/dist%60)).padStart(2,'0')}` : '—';
+  const newRun = { date: todayKey(), dist, dur, pace, hr };
+  const rid = await dbAdd('run-log', newRun).catch(() => null);
+  newRun.id = rid || Date.now();
+  RUNS.unshift(newRun);
+  // Auto-checkin
+  const h = habits.find(x => x.type === 'run');
+  if (h && !h.done) {
+    h.done = true;
+    await dbPut('checkins', { key:h.id+'-'+todayKey(), habitId:h.id, date:todayKey(), ts:Date.now() });
+    await recalcStreakFromCheckins(h);
+    await dbPut('habits', h);
+    const card = document.getElementById('hc-'+h.id);
+    if (card) { card.classList.add('done'); card.querySelector('.hc-check').textContent='✓'; }
+  }
+  toast('🏃 Пробежка сохранена!');
+  document.getElementById('det-body').innerHTML = buildRunDetailHTML();
+  const sh = habits.find(h => h.type === 'run');
+  if (sh) { const strip = document.getElementById('strip-'+sh.id); if (strip) strip.innerHTML = buildRunStrip(); }
+  updateProgress();
+}
+
+function openBookDetail() {
+  const h = habits.find(x => x.type === 'book') || { icon:'📚', name:'Чтение', bg:'rgba(245,158,11,.12)' };
+  openDetailFor(h, buildBookDetailHTML());
+}
+
+function buildBookDetailHTML() {
+  const cur  = BOOKS.find(b => !b.done);
+  const done = BOOKS.filter(b => b.done);
+  const pct  = cur ? Math.round(cur.read/cur.pages*100) : 0;
+  return `
+    <div style="font-family:'Clash Display',sans-serif;font-size:15px;font-weight:600;color:var(--ink);margin-bottom:10px;">Читаю сейчас</div>
+    ${cur ? `
+      <div style="background:var(--card);border-radius:var(--rc);padding:15px;border:1px solid var(--line);margin-bottom:18px;display:flex;gap:13px;">
+        <div style="width:54px;height:74px;border-radius:7px;background:linear-gradient(135deg,#6d28d9,#2563eb);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">${cur.emoji}</div>
+        <div style="flex:1;">
+          <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:2px;">${cur.title}</div>
+          <div style="font-size:13px;color:var(--ink3);margin-bottom:9px;">${cur.author}</div>
+          <div class="bprog-track"><div class="bprog-fill" style="width:${pct}%"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:3px;">
+            <span style="font-size:12px;color:var(--ink3);">${cur.read} / ${cur.pages} стр</span>
+            <span style="font-size:12px;font-weight:700;color:var(--o2);">${pct}%</span>
+          </div>
+          <div style="display:flex;gap:7px;margin-top:9px;">
+            <input class="f-inp" id="pg-inp" type="number" placeholder="Текущая стр" style="flex:1;">
+            <button onclick="updatePage(${cur.id})" style="padding:9px 13px;background:var(--o);border:none;border-radius:var(--rsm);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">OK</button>
+          </div>
+        </div>
+      </div>` : `<div style="color:var(--ink3);font-size:14px;margin-bottom:16px;">Нет текущей книги</div>`}
+    <div class="chart-card" style="margin:0 0 18px;">
+      <div class="cc-title">➕ Добавить книгу</div>
+      <input class="f-inp" id="b-title"  placeholder="Название" style="margin-bottom:8px;">
+      <input class="f-inp" id="b-author" placeholder="Автор" style="margin-bottom:8px;">
+      <input class="f-inp" id="b-pages"  type="number" placeholder="Страниц" style="margin-bottom:10px;">
+      <button class="f-btn" style="background:var(--v);" onclick="addBook()">Добавить книгу</button>
+    </div>
+    <div style="font-family:'Clash Display',sans-serif;font-size:15px;font-weight:600;color:var(--ink);margin-bottom:10px;">Прочитано (${done.length})</div>
+    ${done.map(b => `
+      <div class="book-done">
+        <div class="bd-cover" style="background:linear-gradient(135deg,var(--v),var(--b));">${b.emoji}</div>
+        <div style="flex:1;"><div style="font-size:14px;font-weight:700;color:var(--ink);">${b.title}</div><div style="font-size:12px;color:var(--ink3);">${b.author}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px;">✅ ${b.doneDate || ''}</div></div>
+        <div style="color:var(--o2);font-size:15px;">${'⭐'.repeat(b.rating||0)}</div>
+      </div>`).join('')}`;
+}
+
+async function updatePage(bid) {
+  const pg = parseInt(document.getElementById('pg-inp').value) || 0;
+  if (!pg) { toast('⚠️ Введи номер страницы'); return; }
+  const book = BOOKS.find(b => b.id === bid);
+  if (!book) return;
+  book.read = Math.min(pg, book.pages);
+  if (book.read >= book.pages) { book.done = true; book.doneDate = todayKey(); toast('🎉 Книга прочитана!'); }
+  else toast(`📖 ${book.read}/${book.pages} стр`);
+  await dbPut('books', book).catch(() => {});
+  // auto-checkin
+  const h = habits.find(x => x.type === 'book');
+  if (h && !h.done) {
+    h.done = true;
+    await dbPut('checkins', { key:h.id+'-'+todayKey(), habitId:h.id, date:todayKey(), ts:Date.now() });
+    await recalcStreakFromCheckins(h);
+    await dbPut('habits', h);
+    updateProgress();
+  }
+  document.getElementById('det-body').innerHTML = buildBookDetailHTML();
+  const sh = habits.find(h => h.type === 'book');
+  if (sh) { const strip = document.getElementById('strip-'+sh.id); if (strip) strip.innerHTML = buildBookStrip(); }
+}
+
+async function addBook() {
+  const title  = document.getElementById('b-title').value.trim();
+  const author = document.getElementById('b-author').value.trim();
+  const pages  = parseInt(document.getElementById('b-pages').value) || 0;
+  if (!title || !pages) { toast('⚠️ Заполни название и страницы'); return; }
+  const emojis = ['📗','📘','📙','📕','📒'];
+  const book = { title, author, emoji: emojis[Math.floor(Math.random()*5)], pages, read:0, started:todayKey(), done:false, doneDate:null, rating:0 };
+  const newId = await dbAdd('books', book).catch(() => null);
+  book.id = newId || Date.now();
+  BOOKS.unshift(book);
+  toast(`📚 "${title}" добавлена!`);
+  document.getElementById('det-body').innerHTML = buildBookDetailHTML();
+  const sh = habits.find(h => h.type === 'book');
+  if (sh) { const strip = document.getElementById('strip-'+sh.id); if (strip) strip.innerHTML = buildBookStrip(); }
+}
+
+function openDetail(hid) {
+  const h = habits.find(x => x.id === hid);
+  if (!h) return;
+  if (h.type === 'run')  { openRunDetail();  return; }
+  if (h.type === 'book') { openBookDetail(); return; }
+  openDetailFor(h, `<div style="padding:20px;color:var(--ink2);font-size:15px;">Статистика скоро появится ✨</div>`);
+}
+
+function openDetailFor(h, bodyHTML) {
+  document.getElementById('det-icon').style.cssText = `background:${h.bg||'var(--card2)'};`;
+  document.getElementById('det-icon').textContent   = h.icon || '📊';
+  document.getElementById('det-title').textContent  = h.name || '';
+  document.getElementById('det-meta').textContent   = { run:'История тренировок', book:'Библиотека' }[h.type] || 'Статистика';
+  document.getElementById('det-body').innerHTML     = bodyHTML;
+  document.getElementById('detail').classList.add('open');
+}
+function closeDetail() { document.getElementById('detail').classList.remove('open'); }
+
+/* ════════════════════════════════════════════════════════
+   EXPORT / IMPORT — complete data snapshot
+════════════════════════════════════════════════════════ */
+async function exportData() {
+  showSyncBar();
+  try {
+    const snapshot = {
+      version: DB_VER,
+      exportedAt: new Date().toISOString(),
+      app: 'Streakly',
+      user: currentUser,
+      habits:   await dbGetAll('habits').catch(()=>[]),
+      checkins: await dbGetAll('checkins').catch(()=>[]),
+      runLog:   await dbGetAll('run-log').catch(()=>[]),
+      books:    await dbGetAll('books').catch(()=>[]),
+      waterLog: await dbGetAll('water-log').catch(()=>[]),
+      moodLog:  await dbGetAll('mood-log').catch(()=>[]),
+    };
+    const json = JSON.stringify(snapshot, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `streakly_backup_${todayKey()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('✅ Данные экспортированы! Все ' + snapshot.checkins.length + ' чекинов сохранены.');
+  } finally {
+    hideSyncBar();
+  }
+}
+
+function importData() {
+  const input = document.createElement('input');
+  input.type  = 'file';
+  input.accept = '.json';
+  input.onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    showSyncBar();
+    try {
+      const text = await file.text();
+      const snap = JSON.parse(text);
+      if (!snap.habits || !snap.app) throw new Error('invalid');
+
+      // Import all stores
+      for (const h of (snap.habits||[]))    await dbPut('habits', h).catch(()=>{});
+      for (const c of (snap.checkins||[]))  await dbPut('checkins', c).catch(()=>{});
+      for (const r of (snap.runLog||[]))    await dbPut('run-log', r).catch(()=>{});
+      for (const b of (snap.books||[]))     await dbPut('books', b).catch(()=>{});
+      for (const w of (snap.waterLog||[]))  await dbPut('water-log', w).catch(()=>{});
+      for (const m of (snap.moodLog||[]))   await dbPut('mood-log', m).catch(()=>{});
+      await dbPut('meta', { key:'onboarded', val:true, version:DB_VER });
+
+      habits = await dbGetAll('habits');
+      await startApp();
+      toast(`✅ Импортировано! ${snap.checkins?.length||0} чекинов восстановлено.`);
+    } catch(err) {
+      toast('❌ Ошибка: неверный файл резервной копии');
+    } finally {
+      hideSyncBar();
+    }
+  };
+  input.click();
+}
+
+function confirmReset() {
+  if (!confirm('⚠️ Удалить ВСЕ данные? Это нельзя отменить.\n\nСначала сделай экспорт!')) return;
+  indexedDB.deleteDatabase(DB_NAME);
+  localStorage.clear();
+  toast('Данные удалены. Перезагружаю...');
+  setTimeout(() => location.reload(), 1200);
+}
+
+/* ════════════════════════════════════════════════════════
+   REMINDERS
+════════════════════════════════════════════════════════ */
+function buildRemList() {
+  const el = document.getElementById('rem-list');
+  el.innerHTML = '';
+  habits.forEach(h => {
+    el.innerHTML += `
+      <div class="rem-item">
+        <span style="font-size:19px;">${h.icon}</span>
+        <span class="rem-name">${h.name}</span>
+        <input type="time" class="time-inp" value="${h.reminderTime||'08:00'}" onchange="setRemTime('${h.id}',this.value)">
+        <label class="tog">
+          <input type="checkbox" ${h.reminderOn ? 'checked' : ''} onchange="setRemOn('${h.id}',this.checked)">
+          <span class="tog-sl"></span>
+        </label>
+      </div>`;
+  });
+}
+async function setRemTime(id, val) {
+  const h = habits.find(x => x.id === id);
+  if (!h) return;
+  h.reminderTime = val;
+  await dbPut('habits', h).catch(() => {});
+  toast(`⏰ ${h.name} → ${val}`);
+  renderHabits();
+}
+async function setRemOn(id, val) {
+  const h = habits.find(x => x.id === id);
+  if (!h) return;
+  h.reminderOn = val;
+  await dbPut('habits', h).catch(() => {});
+  toast(val ? '🔔 Включено' : '🔕 Выключено');
+}
+function openRemModal()  { buildRemList(); document.getElementById('rem-modal').classList.add('open'); }
+function closeRemModal() { document.getElementById('rem-modal').classList.remove('open'); }
+
+/* ════════════════════════════════════════════════════════
+   SOCIAL
+════════════════════════════════════════════════════════ */
+function buildSocial() {
+  const fEl = document.getElementById('social-filter');
+  fEl.innerHTML = '';
+  const types = [...new Set(habits.map(h => h.type).filter(t => SOCIAL_DATA[t]))];
+  if (!types.length) { fEl.innerHTML = '<span style="font-size:13px;color:var(--ink3);">Добавь привычки</span>'; return; }
+  types.forEach((t, i) => {
+    const d = DEFS[t];
+    const ch = document.createElement('div');
+    ch.className = 'hf' + (i === 0 ? ' on' : '');
+    ch.textContent = d.icon + ' ' + d.name;
+    ch.onclick = () => { document.querySelectorAll('.hf').forEach(c => c.classList.remove('on')); ch.classList.add('on'); renderLB(t); };
+    fEl.appendChild(ch);
+  });
+  if (types[0]) renderLB(types[0]);
+}
+function renderLB(type) {
+  const el = document.getElementById('leaderboard');
+  const sd = SOCIAL_DATA[type];
+  if (!sd) { el.innerHTML = ''; return; }
+  const medals = ['🥇','🥈','🥉'];
+  const sorted = [...sd.data].sort((a,b) => b.v - a.v);
+  el.innerHTML = `<div style="font-size:11px;color:var(--ink3);margin-bottom:9px;font-weight:600;">📅 АПРЕЛЬ 2025</div>`;
+  sorted.forEach((row, i) => {
+    el.innerHTML += `
+      <div class="lb-row ${row.me ? 'me' : ''}">
+        <div class="lb-rank">${medals[i]||i+1}</div>
+        <div class="lb-av" style="background:${row.me?'rgba(139,92,246,.15)':'var(--card2)'};">${row.av}</div>
+        <div class="lb-info"><div class="lb-name">${row.n}</div>${row.me?'<div class="lb-sub">👑 это ты</div>':''}</div>
+        <div class="lb-right"><div class="lb-val">${row.v}</div><div class="lb-unit">${sd.unit}</div></div>
+      </div>`;
+  });
+}
+
+/* ════════════════════════════════════════════════════════
+   ADD HABIT
+════════════════════════════════════════════════════════ */
+function openAdd()  { document.getElementById('add-sheet').classList.add('open'); }
+function closeAdd() { document.getElementById('add-sheet').classList.remove('open'); }
+
+async function addPreset(type, icon, name) {
+  if (habits.length >= 3 && !currentUser?.isPro) { openPaywall(); return; }
+  const d = DEFS[type] || { color:'#8b5cf6', bg:'rgba(139,92,246,.12)', defTime:'09:00' };
+  const h = { id: type+'-'+Date.now(), type, name, icon, color: d.color, bg: d.bg, reminderTime: d.defTime, reminderOn: true, streak:0, bestStreak:0, done:false, createdAt: new Date().toISOString() };
+  habits.push(h);
+  await dbPut('habits', h).catch(() => {});
+  closeAdd(); renderHabits(); buildSocial(); buildRemList(); updateProgress(); updateProfile();
+  toast(`✅ "${name}" добавлена!`);
+}
+async function addCustom() {
+  const val = document.getElementById('custom-inp').value.trim();
+  if (!val) { toast('⚠️ Введи название'); return; }
+  if (habits.length >= 3 && !currentUser?.isPro) { openPaywall(); return; }
+  const h = { id:'c'+Date.now(), type:'custom', name:val, icon:'⭐', color:'#8b5cf6', bg:'rgba(139,92,246,.12)', reminderTime:'09:00', reminderOn:true, streak:0, bestStreak:0, done:false, createdAt: new Date().toISOString() };
+  habits.push(h);
+  await dbPut('habits', h).catch(() => {});
+  document.getElementById('custom-inp').value = '';
+  closeAdd(); renderHabits(); updateProgress(); updateProfile();
+  toast(`✅ "${val}" добавлена!`);
+}
+
+/* ════════════════════════════════════════════════════════
+   CHARTS
+════════════════════════════════════════════════════════ */
+function buildWeekBars() {
+  const days=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'], vals=[95,80,60,90,75,100,85];
+  const bc=document.getElementById('week-bars'), bl=document.getElementById('week-lbls');
+  if (!bc) return;
+  bc.innerHTML = ''; bl.innerHTML = '';
+  days.forEach((d,i) => {
+    const g=document.createElement('div'); g.className='bc-g';
+    const b=document.createElement('div'); b.className='bc-bar'; b.style.height=vals[i]+'%';
+    b.style.background=vals[i]>=90?'var(--g)':vals[i]>=70?'var(--v)':'var(--card2)';
+    g.appendChild(b); bc.appendChild(g);
+    const l=document.createElement('div'); l.className='bc-g';
+    l.innerHTML=`<div class="bc-lbl">${d}</div>`; bl.appendChild(l);
+  });
+}
+function buildMoodTL() {
+  const el=document.getElementById('mood-tl'); if (!el) return;
+  const em=['😞','😐','🙂','😊','🤩'], m=[3,4,2,5,4,3,4], days=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  el.innerHTML='';
+  m.forEach((v,i) => { el.innerHTML+=`<div class="mt-col"><div style="font-size:17px;">${em[v-1]}</div><div class="mt-lbl">${days[i]}</div></div>`; });
+}
+function buildHeatmap() {
+  const el=document.getElementById('heatmap'); if (!el) return;
+  el.innerHTML='';
+  const lvl=['','l1','l2','l3','l4'];
+  for(let i=0;i<28;i++){ const c=document.createElement('div'); c.className='hm '+lvl[Math.floor(Math.random()*5)]; el.appendChild(c); }
+}
+
+/* ════════════════════════════════════════════════════════
+   STRAVA INTEGRATION
+════════════════════════════════════════════════════════ */
+async function connectStrava() {
+  const token = currentUser?.token;
+  if (!token || currentUser?.isGuest) {
+    toast('⚠️ Сначала войди через Telegram');
+    return;
+  }
+  try {
+    const resp = await fetch(BACKEND_URL + '/auth/strava', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!resp.ok) throw new Error('Failed');
+    const data = await resp.json();
+    // Открываем OAuth страницу Strava
+    window.open(data.authUrl, '_blank');
+    toast('🟠 Открываем Strava авторизацию...');
+  } catch(e) {
+    toast('⚠️ Ошибка подключения Strava');
+  }
+}
+
+async function checkStravaStatus() {
+  const token = currentUser?.token;
+  if (!token || currentUser?.isGuest) return;
+  try {
+    const resp = await fetch(BACKEND_URL + '/auth/strava/status', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const lbl = document.getElementById('strava-menu-label');
+    const rgt = document.getElementById('strava-menu-right');
+    if (data.connected) {
+      if (lbl) lbl.textContent = 'Strava подключена ✅';
+      if (rgt) { rgt.textContent = 'Синхр.'; rgt.style.color = 'var(--g)'; rgt.onclick = () => syncStrava(); }
+    }
+  } catch(e) {}
+}
+
+async function syncStrava() {
+  const token = currentUser?.token;
+  if (!token) return;
+  showSyncBar();
+  try {
+    await fetch(BACKEND_URL + '/strava/sync', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    await syncFromBackend(token);
+    renderHome();
+    toast('✅ Strava синхронизирована!');
+  } catch(e) {
+    toast('⚠️ Ошибка синхронизации');
+  } finally {
+    hideSyncBar();
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   REFERRAL PROGRAM
+════════════════════════════════════════════════════════ */
+async function showReferral() {
+  const stats = await loadReferralStats();
+  if (!stats) {
+    toast('⚠️ Сначала войди через Telegram для реферальной программы');
+    return;
+  }
+  const link = stats.referralLink || (window.location.origin + '?ref=' + stats.referralCode);
+  const msg  = `🤝 Реферальная программа
+
+Пригласи друга — оба получите +7 дней Pro 🎁
+
+Приглашений: ${stats.totalReferrals}
+Дней Pro заработано: ${stats.totalDaysEarned}
+
+Твоя ссылка:
+${link}`;
+  // Используем Web Share API если доступен
+  if (navigator.share) {
+    navigator.share({
+      title: 'Streakly — трекер привычек',
+      text: '🔥 Попробуй Streakly — трекер привычек с ИИ-инсайтами! Первые 7 дней Pro бесплатно.',
+      url: link,
+    }).catch(() => {});
+  } else {
+    // Копируем в буфер
+    navigator.clipboard.writeText(link).then(() => {
+      toast('📋 Ссылка скопирована!
+' + link);
+    }).catch(() => {
+      toast('Ссылка: ' + link);
+    });
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   AI INSIGHTS в профиле
+════════════════════════════════════════════════════════ */
+async function showAIInsight() {
+  if (!currentUser?.isPro) {
+    openPaywall();
+    return;
+  }
+  showSyncBar();
+  const insight = await loadAIInsight();
+  hideSyncBar();
+  if (!insight) {
+    toast('⚠️ Не удалось загрузить инсайт. Проверь подключение.');
+    return;
+  }
+  // Показываем инсайт в модальном окне
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:500;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:calc(20px + var(--sb))';
+  modal.innerHTML = `
+    <div style="background:var(--bg2);border-radius:28px 28px 0 0;padding:26px 22px;max-height:80dvh;overflow-y:auto;">
+      <div style="width:36px;height:4px;background:var(--card2);border-radius:99px;margin:0 auto 18px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span style="background:var(--v);padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;">🤖 ИИ-АНАЛИЗ</span>
+      </div>
+      <div style="font-size:15px;color:var(--ink2);line-height:1.75;">${insight.replace(/
+/g,'<br>')}</div>
+      <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;margin-top:20px;padding:15px;background:var(--v);border:none;border-radius:var(--rsm);color:#fff;font-family:'Clash Display',sans-serif;font-size:16px;font-weight:700;cursor:pointer;">Закрыть</button>
+    </div>`;
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+/* ════════════════════════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════════════════════════ */
+function goPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('on'));
+  document.getElementById('p-'+name).classList.add('on');
+  el.classList.add('on');
+}
+
+/* ════════════════════════════════════════════════════════
+   PAYWALL
+════════════════════════════════════════════════════════ */
+function openPaywall() { document.getElementById('paywall').classList.add('open'); }
+function closePW()     { document.getElementById('paywall').classList.remove('open'); }
+function selPlan(el)   { document.querySelectorAll('.pw-plan').forEach(p=>p.classList.remove('hot')); el.classList.add('hot'); }
+
+/* TOAST */
+let toastT;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 2800);
+}
+
+/* SYNC BAR */
+function showSyncBar() { document.getElementById('sync-bar').classList.add('on'); }
+function hideSyncBar()  { document.getElementById('sync-bar').classList.remove('on'); }
+
+/* ════════════════════════════════════════════════════════
+   BOOT
+════════════════════════════════════════════════════════ */
+openDB().then(async () => {
+  // Check for saved user session
+  try {
+    const saved = await dbGet('meta', 'user');
+    if (saved?.val) currentUser = saved.val;
+  } catch(e) {}
+
+  // Skip auth if session exists
+  let meta = null;
+  try { meta = await dbGet('meta', 'onboarded'); } catch(e) {}
+
+  if (meta?.val) {
+    // Returning user — skip auth and onboarding
+    document.getElementById('auth-screen').style.display = 'none';
+    try { habits = await dbGetAll('habits'); } catch(e) { habits = []; }
+    await startApp();
+  }
+  // else: auth screen is shown by default
+}).catch(() => {
+  // IndexedDB unavailable (private mode) — still show auth
+  console.warn('IndexedDB unavailable');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Согласие на обработку персональных данных — Streakly</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#f8f7f4; --card:#fff; --ink:#1a1a2e; --ink2:#4a4a6a; --ink3:#8888a8; --accent:#6366f1; --green:#10b981; --border:#e8e6f0; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--ink); font-family:'Geist',sans-serif; line-height:1.7; }
+.container { max-width:780px; margin:0 auto; padding:40px 24px 80px; }
+.header { text-align:center; padding:48px 0 40px; border-bottom:1px solid var(--border); margin-bottom:40px; }
+.logo { font-size:40px; margin-bottom:12px; }
+.title { font-family:'Instrument Serif',serif; font-size:32px; color:var(--ink); margin-bottom:8px; }
+.subtitle { font-size:14px; color:var(--ink3); }
+.updated { display:inline-block; background:#ede9fe; color:var(--accent); font-size:12px; font-weight:600; padding:4px 12px; border-radius:99px; margin-top:10px; }
+h2 { font-family:'Instrument Serif',serif; font-size:22px; color:var(--ink); margin:36px 0 12px; padding-top:8px; border-top:1px solid var(--border); }
+h3 { font-size:15px; font-weight:600; color:var(--ink); margin:18px 0 8px; }
+p, li { font-size:15px; color:var(--ink2); margin-bottom:10px; }
+ul, ol { padding-left:22px; margin-bottom:14px; }
+li { margin-bottom:6px; }
+a { color:var(--accent); }
+strong { color:var(--ink); font-weight:600; }
+table { width:100%; border-collapse:collapse; margin:16px 0; font-size:14px; }
+th { background:#f3f0ff; text-align:left; padding:10px 14px; font-weight:600; color:var(--ink); border:1px solid var(--border); }
+td { padding:10px 14px; border:1px solid var(--border); color:var(--ink2); vertical-align:top; }
+
+/* CONSENT FORM */
+.consent-form { background:var(--card); border:2px solid var(--border); border-radius:20px; padding:32px; margin:32px 0; }
+.consent-form-title { font-family:'Instrument Serif',serif; font-size:22px; color:var(--ink); margin-bottom:6px; }
+.consent-form-sub { font-size:13px; color:var(--ink3); margin-bottom:24px; }
+
+.consent-item {
+  display:flex; align-items:flex-start; gap:14px;
+  padding:16px 0; border-bottom:1px solid var(--border);
+}
+.consent-item:last-of-type { border:none; }
+.ci-check {
+  width:22px; height:22px; border-radius:6px; border:2px solid var(--border);
+  cursor:pointer; flex-shrink:0; margin-top:2px;
+  background:var(--bg); display:flex; align-items:center; justify-content:center;
+  transition:all .2s; font-size:13px;
+}
+.ci-check.checked { background:var(--green); border-color:var(--green); color:#fff; }
+.ci-text { flex:1; }
+.ci-title { font-size:15px; font-weight:600; color:var(--ink); margin-bottom:4px; }
+.ci-desc { font-size:13px; color:var(--ink3); line-height:1.6; }
+.ci-required { font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+.ci-optional { font-size:11px; font-weight:700; color:var(--ink3); text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+
+.consent-signature { background:#f3f0ff; border-radius:12px; padding:20px; margin-top:20px; }
+.cs-row { display:flex; gap:12px; margin-bottom:12px; }
+.cs-field { flex:1; display:flex; flex-direction:column; gap:4px; }
+.cs-label { font-size:12px; font-weight:600; color:var(--ink3); }
+.cs-input {
+  background:#fff; border:1.5px solid var(--border); border-radius:8px;
+  padding:10px 12px; color:var(--ink); font-size:14px;
+  font-family:'Geist',sans-serif; outline:none; width:100%;
+  transition:border-color .2s;
+}
+.cs-input:focus { border-color:var(--accent); }
+.cs-input::placeholder { color:var(--ink3); }
+
+.submit-btn {
+  width:100%; padding:16px; background:var(--accent); color:#fff; border:none;
+  border-radius:12px; font-family:'Geist',sans-serif; font-size:16px; font-weight:600;
+  cursor:pointer; margin-top:16px; transition:opacity .15s;
+}
+.submit-btn:active { opacity:.85; }
+.submit-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+.success-box {
+  display:none; background:#d1fae5; border:1px solid #6ee7b7; border-radius:12px;
+  padding:20px; text-align:center; margin-top:16px;
+}
+.success-box.show { display:block; }
+.success-icon { font-size:32px; margin-bottom:8px; }
+.success-title { font-size:16px; font-weight:600; color:#065f46; }
+.success-sub { font-size:13px; color:#047857; margin-top:4px; }
+
+.callout { background:#ede9fe; border:1px solid #c4b5fd; border-radius:12px; padding:16px 20px; margin:20px 0; }
+.callout p { color:#3730a3; margin:0; font-size:14px; }
+
+footer { text-align:center; font-size:13px; color:var(--ink3); padding:32px 0 0; border-top:1px solid var(--border); margin-top:48px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+  <div class="logo">🔒</div>
+  <div class="title">Согласие на обработку персональных данных</div>
+  <div class="subtitle">Streakly — Трекер привычек</div>
+  <div class="updated">Версия 1.0 · 1 мая 2025 г.</div>
+</div>
+
+<p>Настоящее Согласие составлено в соответствии с требованиями <strong>Закона Республики Казахстан от 21 мая 2013 года № 94-V «О персональных данных и их защите»</strong> и Регламента ЕС 2016/679 (GDPR).</p>
+
+<h2>Кто обрабатывает данные</h2>
+<p><strong>Оператор:</strong> ИП Streakly<br>
+<strong>Адрес:</strong> Республика Казахстан, г. Алматы<br>
+<strong>Email:</strong> <a href="mailto:privacy@streakly.app">privacy@streakly.app</a><br>
+<strong>Telegram:</strong> @streakly_support</p>
+
+<h2>Перечень персональных данных и цели обработки</h2>
+<table>
+  <tr><th>Категория данных</th><th>Конкретные данные</th><th>Цель обработки</th><th>Срок хранения</th></tr>
+  <tr>
+    <td>Идентификационные</td>
+    <td>Telegram ID, имя пользователя, @username</td>
+    <td>Авторизация, идентификация аккаунта, отправка уведомлений</td>
+    <td>До удаления аккаунта</td>
+  </tr>
+  <tr>
+    <td>Контактные (опц.)</td>
+    <td>Номер телефона</td>
+    <td>Восстановление доступа, SMS-уведомления при отключении Telegram</td>
+    <td>До отзыва согласия или удаления аккаунта</td>
+  </tr>
+  <tr>
+    <td>Данные активности</td>
+    <td>Список привычек, ежедневные чекины, даты и время выполнения</td>
+    <td>Подсчёт стриков, формирование статистики, рейтинги</td>
+    <td>До удаления аккаунта</td>
+  </tr>
+  <tr>
+    <td>Фитнес-данные (опц.)</td>
+    <td>Дистанция, время, темп, пульс (для привычки «Бег»)</td>
+    <td>Детальная статистика тренировок, интеграция со Strava/Garmin</td>
+    <td>До удаления аккаунта</td>
+  </tr>
+  <tr>
+    <td>Читательские данные (опц.)</td>
+    <td>Названия книг, авторы, прогресс чтения</td>
+    <td>Отслеживание читательского прогресса</td>
+    <td>До удаления аккаунта</td>
+  </tr>
+  <tr>
+    <td>Технические</td>
+    <td>IP-адрес, тип устройства, логи ошибок</td>
+    <td>Безопасность, диагностика технических проблем</td>
+    <td>90 дней</td>
+  </tr>
+</table>
+
+<h2>Способы обработки</h2>
+<ul>
+  <li>Сбор данных через веб-приложение и Telegram-бот;</li>
+  <li>Хранение в зашифрованной базе данных PostgreSQL;</li>
+  <li>Локальное хранение в браузере (IndexedDB) без передачи на сервер при использовании без авторизации;</li>
+  <li>Обработка для формирования статистики и рейтингов;</li>
+  <li>Передача в Telegram для отправки уведомлений.</li>
+</ul>
+
+<h2>Передача третьим лицам</h2>
+<p>Данные передаются исключительно:</p>
+<ul>
+  <li>Провайдерам хостинга (как обработчикам данных по нашим инструкциям);</li>
+  <li>Сервисам, которые вы явно подключили (Strava, Apple Health, Garmin — только с отдельного согласия через OAuth);</li>
+  <li>Государственным органам — только на основании законного требования.</li>
+</ul>
+
+<h2>Ваши права</h2>
+<ul>
+  <li>Отозвать настоящее согласие в любой момент через команду /settings в боте или в настройках приложения;</li>
+  <li>Получить доступ к своим данным (команда /export);</li>
+  <li>Потребовать исправления или удаления данных;</li>
+  <li>Получить данные в машиночитаемом формате (JSON-экспорт);</li>
+  <li>Направить жалобу в Министерство цифрового развития, инноваций и аэрокосмической промышленности РК.</li>
+</ul>
+
+<div class="callout">
+  <p>Отзыв согласия не влечёт негативных последствий для вас, однако может сделать использование Сервиса невозможным. При отзыве согласия аккаунт и все данные будут удалены в течение 30 дней.</p>
+</div>
+
+<!-- CONSENT FORM -->
+<div class="consent-form" id="consent-form">
+  <div class="consent-form-title">Подписание согласия</div>
+  <div class="consent-form-sub">Ознакомьтесь с каждым пунктом и подтвердите согласие</div>
+
+  <div class="consent-item">
+    <div class="ci-check" id="chk1" onclick="toggleCheck('chk1', 'required')">✓</div>
+    <div class="ci-text">
+      <div class="ci-required">Обязательно</div>
+      <div class="ci-title">Обработка идентификационных данных</div>
+      <div class="ci-desc">Я даю согласие на обработку моего Telegram ID, имени и @username для целей авторизации, идентификации аккаунта и работы Сервиса.</div>
+    </div>
+  </div>
+
+  <div class="consent-item">
+    <div class="ci-check" id="chk2" onclick="toggleCheck('chk2', 'required')">✓</div>
+    <div class="ci-text">
+      <div class="ci-required">Обязательно</div>
+      <div class="ci-title">Обработка данных активности</div>
+      <div class="ci-desc">Я даю согласие на обработку данных о моих привычках (чекины, стрики, статистика) для предоставления основного функционала Сервиса и формирования рейтингов.</div>
+    </div>
+  </div>
+
+  <div class="consent-item">
+    <div class="ci-check unchecked" id="chk3" onclick="toggleCheck('chk3', 'optional')"></div>
+    <div class="ci-text">
+      <div class="ci-optional">Необязательно</div>
+      <div class="ci-title">Обработка номера телефона</div>
+      <div class="ci-desc">Я даю согласие на обработку моего номера телефона для восстановления доступа и SMS-резервных уведомлений. Могу отозвать в любой момент.</div>
+    </div>
+  </div>
+
+  <div class="consent-item">
+    <div class="ci-check unchecked" id="chk4" onclick="toggleCheck('chk4', 'optional')"></div>
+    <div class="ci-text">
+      <div class="ci-optional">Необязательно</div>
+      <div class="ci-title">Интеграция с фитнес-сервисами</div>
+      <div class="ci-desc">Я даю согласие на получение данных о тренировках из Strava, Garmin Connect, Apple Health, Google Fit (только для сервисов, которые я явно подключу через OAuth). Каждый сервис подключается отдельно.</div>
+    </div>
+  </div>
+
+  <div class="consent-item">
+    <div class="ci-check unchecked" id="chk5" onclick="toggleCheck('chk5', 'optional')"></div>
+    <div class="ci-text">
+      <div class="ci-optional">Необязательно</div>
+      <div class="ci-title">Получение маркетинговых сообщений</div>
+      <div class="ci-desc">Я даю согласие на получение информации о новых функциях, акциях и обновлениях Streakly через Telegram-бот. Не более 2 сообщений в месяц. Можно отписаться командой /unsubscribe.</div>
+    </div>
+  </div>
+
+  <div class="consent-signature">
+    <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:14px;">Данные о подписании согласия</div>
+    <div class="cs-row">
+      <div class="cs-field">
+        <div class="cs-label">Имя (как в Telegram)</div>
+        <input class="cs-input" id="consent-name" placeholder="Ваше имя">
+      </div>
+      <div class="cs-field">
+        <div class="cs-label">Дата</div>
+        <input class="cs-input" id="consent-date" type="date" readonly>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);line-height:1.6;margin-top:8px;">
+      Факт нажатия кнопки «Даю согласие» фиксируется с указанием даты, времени и Telegram ID. 
+      Эта запись является электронным аналогом подписи в соответствии со ст. 8 Закона РК «Об электронном документе и электронной цифровой подписи».
+    </div>
+    <button class="submit-btn" id="submit-btn" onclick="submitConsent()" disabled>
+      ✅ Даю согласие
+    </button>
+  </div>
+
+  <div class="success-box" id="success-box">
+    <div class="success-icon">✅</div>
+    <div class="success-title">Согласие подписано</div>
+    <div class="success-sub" id="success-ts"></div>
+  </div>
+</div>
+
+<h2>Контакты ответственного за обработку данных</h2>
+<p><strong>Email:</strong> <a href="mailto:privacy@streakly.app">privacy@streakly.app</a><br>
+<strong>Telegram:</strong> @streakly_support<br>
+<strong>Срок ответа на запросы:</strong> 15 рабочих дней (РК), 30 дней (GDPR)</p>
+
+<footer>
+  <p>© 2025 Streakly. Все права защищены.</p>
+  <p style="margin-top:8px;"><a href="privacy.html">Политика конфиденциальности</a> · <a href="terms.html">Условия использования</a></p>
+</footer>
+</div>
+
+<script>
+// Set today's date
+document.getElementById('consent-date').value = new Date().toISOString().split('T')[0];
+
+const required = ['chk1', 'chk2'];
+const checks   = { chk1:false, chk2:false, chk3:false, chk4:false, chk5:false };
+
+// Pre-check required ones with animation
+setTimeout(() => {
+  ['chk1','chk2'].forEach(id => {
+    checks[id] = true;
+    document.getElementById(id).classList.add('checked');
+    document.getElementById(id).classList.remove('unchecked');
+    document.getElementById(id).textContent = '✓';
+  });
+  checkSubmit();
+}, 200);
+
+function toggleCheck(id, type) {
+  if (type === 'required') return; // can't uncheck required
+  checks[id] = !checks[id];
+  const el = document.getElementById(id);
+  if (checks[id]) {
+    el.classList.add('checked');
+    el.textContent = '✓';
+  } else {
+    el.classList.remove('checked');
+    el.textContent = '';
+  }
+  checkSubmit();
+}
+
+function checkSubmit() {
+  const allRequired = required.every(id => checks[id]);
+  const hasName = document.getElementById('consent-name').value.trim().length > 1;
+  document.getElementById('submit-btn').disabled = !(allRequired && hasName);
+}
+
+document.getElementById('consent-name').addEventListener('input', checkSubmit);
+
+function submitConsent() {
+  const name = document.getElementById('consent-name').value.trim();
+  const ts   = new Date().toLocaleString('ru-RU', {timeZone:'Asia/Almaty'});
+
+  const consentRecord = {
+    name,
+    timestamp: new Date().toISOString(),
+    checks: { ...checks },
+    userAgent: navigator.userAgent,
+    version: '1.0',
+  };
+
+  // Save to localStorage for reference
+  localStorage.setItem('streakly_consent', JSON.stringify(consentRecord));
+
+  // In production: also POST to /consent endpoint to save server-side
+  // fetch('/consent', { method:'POST', body: JSON.stringify(consentRecord), ... })
+
+  document.getElementById('success-ts').textContent =
+    `${name} · ${ts} (Алматы) · Согласие v1.0`;
+
+  document.getElementById('submit-btn').style.display = 'none';
+  document.getElementById('success-box').classList.add('show');
+
+  // Scroll to success
+  document.getElementById('success-box').scrollIntoView({ behavior:'smooth' });
+}
+</script>
+</body>
+</html>

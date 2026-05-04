@@ -1,0 +1,8 @@
+BOT_TOKEN=8692001188:AAFuNPbdhhQrBmAcaLz1LPDnVs4Idpye9ZQ
+DATABASE_URL=postgresql://streaklyapp:МойПароль123@localhost:5432/streaklyapp
+REDIS_URL=redis://localhost:6379
+WEBAPP_URL=https://streaklyapp.netlify.app/
+API_URL=https://api.streaklyapp.app
+ADMIN_IDS=454719510
+ADMIN_KEY=любой-секретный-ключ-2025
+POSTGRES_PASSWORD=МойПароль123
