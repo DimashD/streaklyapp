@@ -40,37 +40,76 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
 #auth-screen {
   position:absolute;inset:0;z-index:300;background:var(--bg);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:32px 24px;
+  padding:32px 24px;overflow-y:auto;
 }
-.auth-logo{font-size:64px;margin-bottom:20px;}
-.auth-title{font-family:'Clash Display',sans-serif;font-size:30px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:10px;}
-.auth-sub{font-size:15px;color:var(--ink2);text-align:center;line-height:1.6;margin-bottom:36px;max-width:320px;}
+.auth-logo{font-size:56px;margin-bottom:16px;}
+.auth-title{font-family:'Clash Display',sans-serif;font-size:28px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:8px;}
+.auth-sub{font-size:14px;color:var(--ink2);text-align:center;line-height:1.6;margin-bottom:28px;max-width:320px;}
+
+/* Email input */
+.auth-email-wrap{width:100%;margin-bottom:10px;position:relative;}
+.auth-email-inp{
+  width:100%;padding:16px 14px;
+  background:var(--card);border:1.5px solid var(--line2);
+  border-radius:var(--rc);color:var(--ink);
+  font-size:16px;font-family:'Cabinet Grotesk',sans-serif;
+  outline:none;transition:border-color .2s;
+}
+.auth-email-inp:focus{border-color:var(--v);}
+.auth-email-inp::placeholder{color:var(--ink3);}
+.auth-email-btn{
+  width:100%;padding:17px;border:none;border-radius:var(--rc);
+  background:var(--v);color:#fff;
+  font-family:'Clash Display',sans-serif;font-size:17px;font-weight:700;
+  cursor:pointer;margin-bottom:14px;
+  box-shadow:0 8px 28px rgba(139,92,246,.35);
+  transition:transform .15s,opacity .15s;
+}
+.auth-email-btn:active{transform:scale(.97);}
+.auth-email-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* Magic link sent screen */
+.auth-magic-sent{display:none;text-align:center;padding:20px 0;}
+.auth-magic-icon{font-size:52px;margin-bottom:12px;}
+.auth-magic-title{font-family:'Clash Display',sans-serif;font-size:22px;font-weight:700;color:var(--ink);margin-bottom:8px;}
+.auth-magic-sub{font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:20px;}
+
+/* OTP input */
+.auth-otp-wrap{display:none;width:100%;}
+.auth-otp-inp{
+  width:100%;padding:18px;text-align:center;letter-spacing:8px;
+  font-family:'Clash Display',sans-serif;font-size:24px;font-weight:700;
+  background:var(--card);border:1.5px solid var(--line2);
+  border-radius:var(--rc);color:var(--ink);outline:none;
+  transition:border-color .2s;margin-bottom:10px;
+}
+.auth-otp-inp:focus{border-color:var(--v);}
 
 .tg-btn {
   display:flex;align-items:center;justify-content:center;gap:10px;
-  width:100%;padding:17px;border:none;border-radius:var(--rc);
-  background:var(--tg);color:#fff;
-  font-family:'Clash Display',sans-serif;font-size:17px;font-weight:600;
-  cursor:pointer;margin-bottom:14px;
-  box-shadow:0 8px 28px rgba(34,158,217,.35);
+  width:100%;padding:15px;border:none;border-radius:var(--rc);
+  background:rgba(34,158,217,.12);color:var(--tg);
+  border:1.5px solid rgba(34,158,217,.3);
+  font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:600;
+  cursor:pointer;margin-bottom:12px;
   transition:transform .15s,opacity .15s;
 }
 .tg-btn:active{transform:scale(.97);}
-.tg-btn-icon{font-size:22px;}
+.tg-btn-icon{font-size:18px;}
 
-.auth-divider{display:flex;align-items:center;gap:10px;width:100%;margin:4px 0 14px;}
+.auth-divider{display:flex;align-items:center;gap:10px;width:100%;margin:4px 0 12px;}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--line2);}
 .auth-divider span{font-size:12px;color:var(--ink3);}
 
 .guest-btn {
-  width:100%;padding:15px;border:1.5px solid var(--line2);border-radius:var(--rc);
-  background:transparent;color:var(--ink2);
-  font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:600;
-  cursor:pointer;transition:all .2s;margin-bottom:24px;
+  width:100%;padding:13px;border:1.5px solid var(--line2);border-radius:var(--rc);
+  background:transparent;color:var(--ink3);
+  font-family:'Cabinet Grotesk',sans-serif;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all .2s;margin-bottom:20px;
 }
 .guest-btn:active{background:var(--card);}
 
-.auth-legal{font-size:12px;color:var(--ink3);text-align:center;line-height:1.6;max-width:280px;}
+.auth-legal{font-size:11px;color:var(--ink3);text-align:center;line-height:1.6;max-width:280px;}
 .auth-legal a{color:var(--v2);text-decoration:none;}
 
 /* Phone request modal */
@@ -351,25 +390,59 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
 <!-- ══════════════ AUTH SCREEN ══════════════ -->
 <div id="auth-screen">
   <div class="auth-logo">🔥</div>
-  <div class="auth-title clash">Добро пожаловать в Streaklyapp</div>
-  <div class="auth-sub">Трекер привычек который помогает выработать полезные привычки за 21 день</div>
+  <div class="auth-title clash">Streaklyapp</div>
+  <div class="auth-sub">Трекер привычек за 21 день</div>
 
-  <button class="tg-btn" onclick="loginTelegram()">
-    <span class="tg-btn-icon">✈️</span>
-    Войти через Telegram
-  </button>
-  <div id="tg-widget-container" style="display:none;"></div>
+  <!-- Email форма -->
+  <div id="auth-email-form" style="width:100%;">
+    <div class="auth-email-wrap">
+      <input class="auth-email-inp" id="auth-email-inp"
+        type="email" placeholder="твой@email.com"
+        autocomplete="email" inputmode="email"
+        onkeydown="if(event.key==='Enter')sendMagicLink()">
+    </div>
+    <button class="auth-email-btn" id="auth-email-btn" onclick="sendMagicLink()">
+      Войти / Зарегистрироваться →
+    </button>
 
-  <div class="auth-divider"><span>или</span></div>
+    <div class="auth-divider"><span>или</span></div>
 
-  <button class="guest-btn" onclick="loginGuest()">
-    Продолжить без аккаунта
-  </button>
+    <button class="tg-btn" onclick="loginTelegramDirect()">
+      <span class="tg-btn-icon">✈️</span>
+      Войти через Telegram
+    </button>
 
-  <div class="auth-legal">
-    Нажимая «Войти», вы принимаете <a href="terms.html" target="_blank">Условия использования</a>
-    и соглашаетесь с <a href="privacy.html" target="_blank">Политикой конфиденциальности</a>
-    и <a href="consent.html" target="_blank">обработкой персональных данных</a>
+    <button class="guest-btn" onclick="loginGuest()">
+      Продолжить без аккаунта
+    </button>
+  </div>
+
+  <!-- Magic link отправлен -->
+  <div class="auth-magic-sent" id="auth-magic-sent">
+    <div class="auth-magic-icon">📬</div>
+    <div class="auth-magic-title clash">Проверь почту!</div>
+    <div class="auth-magic-sub">
+      Мы отправили код на<br>
+      <strong id="auth-email-shown"></strong>
+    </div>
+    <!-- OTP ввод -->
+    <div class="auth-otp-wrap" id="auth-otp-wrap" style="display:block;">
+      <input class="auth-otp-inp" id="auth-otp-inp"
+        type="number" placeholder="000000"
+        maxlength="6" inputmode="numeric"
+        oninput="if(this.value.length>=6)verifyOTP()"
+        onkeydown="if(event.key==='Enter')verifyOTP()">
+      <button class="auth-email-btn" onclick="verifyOTP()">Подтвердить →</button>
+    </div>
+    <button style="background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;margin-top:8px;" onclick="resetAuthForm()">
+      ← Изменить email
+    </button>
+  </div>
+
+  <div class="auth-legal" style="margin-top:8px;">
+    Нажимая «Войти», вы принимаете
+    <a href="terms.html" target="_blank">Условия</a> и
+    <a href="privacy.html" target="_blank">Политику конфиденциальности</a>
   </div>
 </div>
 
@@ -844,77 +917,172 @@ const SOCIAL_DATA = {
 /* ════════════════════════════════════════════════════════
    AUTH — Telegram Login
 ════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════
+   EMAIL MAGIC LINK AUTH
+════════════════════════════════════════════════════════ */
+let authEmail = '';
+let otpCode   = '';
+
+async function sendMagicLink() {
+  const email = document.getElementById('auth-email-inp').value.trim().toLowerCase();
+  if (!email || !email.includes('@') || !email.includes('.')) {
+    toast('⚠️ Введи корректный email');
+    document.getElementById('auth-email-inp').focus();
+    return;
+  }
+
+  authEmail = email;
+  const btn = document.getElementById('auth-email-btn');
+  btn.disabled = true;
+  btn.textContent = 'Отправляем...';
+
+  try {
+    // Генерируем 6-значный OTP локально для demo
+    // В продакшене — POST /auth/email/send на бэкенд
+    otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    if (BACKEND_URL && BACKEND_URL !== 'https://api.streaklyapp.app') {
+      // Отправляем через бэкенд
+      const resp = await fetch(BACKEND_URL + '/auth/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!resp.ok) throw new Error('send failed');
+    }
+
+    // Показываем экран "проверь почту"
+    document.getElementById('auth-email-form').style.display = 'none';
+    document.getElementById('auth-magic-sent').style.display = 'block';
+    document.getElementById('auth-email-shown').textContent = email;
+    setTimeout(() => document.getElementById('auth-otp-inp')?.focus(), 300);
+
+    // В demo режиме показываем код (убери в продакшене!)
+    if (!BACKEND_URL || BACKEND_URL === '') {
+      toast('🔑 Demo-код: ' + otpCode, 5000);
+    }
+  } catch(e) {
+    toast('⚠️ Ошибка отправки. Попробуй позже.');
+    btn.disabled = false;
+    btn.textContent = 'Войти / Зарегистрироваться →';
+  }
+}
+
+async function verifyOTP() {
+  const inp = document.getElementById('auth-otp-inp');
+  const code = inp.value.trim();
+  if (code.length < 6) { toast('Введи 6-значный код'); return; }
+
+  inp.disabled = true;
+
+  try {
+    let verified = false;
+    let userData = null;
+
+    if (BACKEND_URL && BACKEND_URL !== '') {
+      // Верифицируем через бэкенд
+      const resp = await fetch(BACKEND_URL + '/auth/email/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: authEmail, code }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        userData = {
+          id: data.user.id || 'email_' + authEmail.replace('@','_'),
+          name: data.user.name || authEmail.split('@')[0],
+          email: authEmail,
+          token: data.token,
+          isGuest: false,
+          emailConnected: true,
+        };
+        verified = true;
+      }
+    } else {
+      // Demo режим — принимаем любой код совпадающий с otpCode
+      if (code === otpCode) {
+        userData = {
+          id: 'email_' + Date.now(),
+          name: authEmail.split('@')[0],
+          email: authEmail,
+          isGuest: false,
+          emailConnected: true,
+        };
+        verified = true;
+      }
+    }
+
+    if (verified && userData) {
+      currentUser = userData;
+      await dbPut('meta', { key: 'user', val: userData }).catch(() => {});
+      document.getElementById('auth-screen').style.display = 'none';
+      toast('✅ Добро пожаловать, ' + userData.name + '!');
+      proceedToApp();
+    } else {
+      toast('❌ Неверный код. Проверь email.');
+      inp.disabled = false;
+      inp.value = '';
+      inp.focus();
+    }
+  } catch(e) {
+    toast('⚠️ Ошибка проверки. Попробуй снова.');
+    inp.disabled = false;
+  }
+}
+
+function resetAuthForm() {
+  document.getElementById('auth-email-form').style.display = 'block';
+  document.getElementById('auth-magic-sent').style.display = 'none';
+  document.getElementById('auth-email-btn').disabled = false;
+  document.getElementById('auth-email-btn').textContent = 'Войти / Зарегистрироваться →';
+  document.getElementById('auth-email-inp').value = '';
+  document.getElementById('auth-otp-inp').value = '';
+  authEmail = '';
+  otpCode = '';
+}
+
+/* ════════════════════════════════════════════════════════
+   TELEGRAM AUTH — прямая ссылка на бота
+════════════════════════════════════════════════════════ */
+function loginTelegramDirect() {
+  // Открываем бота напрямую — пользователь нажимает /start
+  // Бот записывает его в БД, потом он возвращается в приложение
+  const botUrl = 'https://t.me/' + BOT_NAME + '?start=webapp';
+  window.open(botUrl, '_blank');
+  // Показываем инструкцию
+  toast('✈️ Открываем бота... После /start вернись сюда и войди через email');
+}
+
 function loginTelegram() {
-  /*
-   * Telegram Login Widget — автоматически инициализируется при загрузке страницы.
-   * Кнопка в auth-screen вызывает виджет через window.TelegramLoginWidget.
-   * После авторизации Telegram вызывает window.onTelegramAuth(user).
-   *
-   * Для активации:
-   * 1. Замени BOT_NAME выше на username своего бота (без @)
-   * 2. Виджет подгружается динамически ниже в initTelegramWidget()
-   */
-  initTelegramWidget();
+  loginTelegramDirect();
 }
 
-function initTelegramWidget() {
-  // Удаляем старый скрипт если есть
-  const old = document.getElementById('tg-widget-script');
-  if (old) old.remove();
-
-  const s = document.createElement('script');
-  s.id = 'tg-widget-script';
-  s.async = true;
-  s.src = 'https://telegram.org/js/telegram-widget.js?22';
-  s.setAttribute('data-telegram-login', BOT_NAME);
-  s.setAttribute('data-size', 'large');
-  s.setAttribute('data-onauth', 'onTelegramWidgetAuth(user)');
-  s.setAttribute('data-request-access', 'write');
-  s.setAttribute('data-userpic', 'false');
-
-  // Вставляем скрипт — он сам отрендерит кнопку
-  document.getElementById('tg-widget-container').appendChild(s);
-}
-
-// Вызывается Telegram Widget после успешной авторизации
+// Вызывается Telegram Widget после авторизации (если настроен)
 async function onTelegramWidgetAuth(tgUser) {
   showSyncBar();
   try {
-    // Верифицируем на бэкенде и получаем токен
     const resp = await fetch(BACKEND_URL + '/auth/telegram', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(tgUser),
     });
-    if (!resp.ok) throw new Error('Auth failed: ' + resp.status);
+    if (!resp.ok) throw new Error('Auth failed');
     const data = await resp.json();
-
-    // Сохраняем токен для последующих запросов
     const user = {
       ...data.user,
       token: data.token,
-      photo: tgUser.photo_url ? '🖼' : '👤',
       name: data.user.name || tgUser.first_name,
       tgConnected: true,
       isGuest: false,
     };
-    await onTelegramAuth(user);
-
-    // Применяем реф. код если был в URL
-    const ref = new URLSearchParams(location.search).get('ref');
-    if (ref) {
-      await fetch(BACKEND_URL + '/referral/apply?ref_code=' + ref, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + user.token },
-      }).catch(() => {});
-      toast('🎁 Реферальный код применён! +7 дней Pro');
-    }
-
-    // Синхронизируем данные с сервером
+    currentUser = user;
+    await dbPut('meta', { key: 'user', val: user }).catch(() => {});
+    document.getElementById('auth-screen').style.display = 'none';
     await syncFromBackend(user.token);
-  } catch (e) {
-    console.error('Telegram auth error:', e);
-    toast('⚠️ Ошибка авторизации. Попробуй ещё раз.');
+    proceedToApp();
+    toast('✅ Вошёл через Telegram!');
+  } catch(e) {
+    toast('⚠️ Ошибка Telegram авторизации.');
   } finally {
     hideSyncBar();
   }
@@ -923,23 +1091,8 @@ async function onTelegramWidgetAuth(tgUser) {
 function onTelegramAuth(user) {
   currentUser = user;
   dbPut('meta', { key: 'user', val: user }).catch(() => {});
-
-  // Update UI
-  document.getElementById('prof-name').textContent = user.name || user.username;
-  document.getElementById('prof-av').textContent = user.photo || '👤';
-  document.getElementById('prof-sub').textContent = '@' + user.username + ' · Telegram подключён ✅';
-  document.getElementById('home-greeting').textContent = `Привет, ${user.name}! 👋`;
-
-  // Hide TG menu item (already connected)
-  document.getElementById('tg-menu-item').style.display = 'none';
-
-  // If auth-screen visible → show phone request
-  if (document.getElementById('auth-screen').style.display !== 'none') {
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('phone-modal').classList.add('open');
-  } else {
-    toast('✅ Telegram подключён! Данные синхронизированы');
-  }
+  updateProfile();
+  toast('✅ Добро пожаловать, ' + (user.name || 'пользователь') + '!');
 }
 
 /* ════════════════════════════════════════════════════════

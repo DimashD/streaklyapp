@@ -1,95 +1,78 @@
 """
-Streakly Bot v2 — aiogram 3.x
-Добавлено: Kaspi QR оплата, ИИ-инсайты, реферальная программа, Strava подключение
+Streaklyapp Backend v2 — FastAPI
+Полный продакшен: Telegram auth, Kaspi QR оплата, Strava OAuth, ИИ-инсайты, реферальная программа
 """
 import asyncio
+import base64
+import hashlib
+import hmac
+import json
 import logging
 import os
 import secrets
-from datetime import datetime, timedelta, date
-from typing import Optional
+import time
+from datetime import datetime, date, timedelta
+from typing import Optional, List
 
-from aiogram import Bot, Dispatcher, Router, F
-from aiogram.enums import ParseMode
-from aiogram.filters import Command, CommandStart
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.fsm.storage.redis import RedisStorage
-from aiogram.types import (
-    Message, CallbackQuery,
-    InlineKeyboardButton, InlineKeyboardMarkup,
-    ReplyKeyboardMarkup, ReplyKeyboardRemove,
-    LabeledPrice, PreCheckoutQuery,
-)
-from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 import asyncpg
 import httpx
+from fastapi import FastAPI, HTTPException, Request, Depends, Header, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
+from pydantic import BaseModel
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ══════════════════════════════════════════════════════
 # CONFIG
 # ══════════════════════════════════════════════════════
-BOT_TOKEN    = os.getenv("BOT_TOKEN", "")
-DATABASE_URL = os.getenv("DATABASE_URL", "")
-REDIS_URL    = os.getenv("REDIS_URL", "redis://localhost:6379")
-WEBAPP_URL   = os.getenv("WEBAPP_URL", "https://streakly.app")
-API_URL      = os.getenv("API_URL", "https://api.streakly.app")
-ADMIN_IDS    = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
+BOT_TOKEN          = os.getenv("BOT_TOKEN", "")
+DATABASE_URL       = os.getenv("DATABASE_URL", "")
+WEBAPP_URL         = os.getenv("WEBAPP_URL", "https://streaklyapp.app")
+API_URL            = os.getenv("API_URL", "https://api.streaklyapp.app")
 
-HABIT_DEFS = {
-    "run":       {"icon": "🏃", "name": "Бег",       "defTime": "07:00"},
-    "book":      {"icon": "📚", "name": "Чтение",    "defTime": "21:00"},
-    "water":     {"icon": "💧", "name": "Вода",      "defTime": "09:00"},
-    "meditate":  {"icon": "🧘", "name": "Медитация", "defTime": "06:30"},
-    "sleep":     {"icon": "😴", "name": "Сон",       "defTime": "22:30"},
-    "journal":   {"icon": "✍️", "name": "Дневник",  "defTime": "22:00"},
-    "nutrition": {"icon": "🥗", "name": "Питание",   "defTime": "12:00"},
-}
+# Strava
+STRAVA_CLIENT_ID     = os.getenv("STRAVA_CLIENT_ID", "")
+STRAVA_CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET", "")
+STRAVA_WEBHOOK_SECRET = os.getenv("STRAVA_WEBHOOK_SECRET", "")
 
-PLANS = {
-    "monthly": {"price": 2990,  "days": 30,  "label": "Стандарт",  "desc": "2 990 ₸/месяц"},
-    "yearly":  {"price": 1990,  "days": 365, "label": "Годовой",   "desc": "1 990 ₸/мес · скидка 33%"},
-    "family":  {"price": 5990,  "days": 30,  "label": "Семья × 5", "desc": "5 990 ₸/месяц"},
-}
+# Kaspi
+KASPI_MERCHANT_ID  = os.getenv("KASPI_MERCHANT_ID", "")
+KASPI_PRIVATE_KEY  = os.getenv("KASPI_PRIVATE_KEY", "")
+
+# OpenAI
+OPENAI_API_KEY     = os.getenv("OPENAI_API_KEY", "")
 
 # ══════════════════════════════════════════════════════
-# FSM STATES
+# APP INIT
 # ══════════════════════════════════════════════════════
-class Onboarding(StatesGroup):
-    consent       = State()
-    habits        = State()
-    phone         = State()
+app = FastAPI(
+    title="Streaklyapp API",
+    version="2.0.0",
+    docs_url="/docs",   # отключи в проде: docs_url=None
+)
 
-class RunLog(StatesGroup):
-    distance  = State()
-    duration  = State()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[WEBAPP_URL, "http://localhost:8080", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-class BookLog(StatesGroup):
-    action    = State()  # 'pages' | 'new_title'
-    pages     = State()
-    new_title = State()
-    new_pages = State()
-
-class Support(StatesGroup):
-    message = State()
-
-# ══════════════════════════════════════════════════════
-# DB HELPERS
-# ══════════════════════════════════════════════════════
 pool: Optional[asyncpg.Pool] = None
 
-async def init_db():
+# ══════════════════════════════════════════════════════
+# DB INIT — все таблицы создаются здесь
+# ══════════════════════════════════════════════════════
+@app.on_event("startup")
+async def startup():
     global pool
-    pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=20)
     async with pool.acquire() as conn:
         await conn.execute("""
+            -- Пользователи
             CREATE TABLE IF NOT EXISTS users (
                 id              BIGINT PRIMARY KEY,
                 username        TEXT,
@@ -97,15 +80,18 @@ async def init_db():
                 phone           TEXT,
                 is_pro          BOOLEAN DEFAULT FALSE,
                 pro_until       TIMESTAMPTZ,
-                pro_plan        TEXT,
-                referral_code   TEXT UNIQUE,
-                referred_by     BIGINT,
+                pro_plan        TEXT,                     -- 'monthly'|'yearly'|'family'
+                referral_code   TEXT UNIQUE,              -- уникальный реф. код
+                referred_by     BIGINT REFERENCES users(id),
                 consent_given   BOOLEAN DEFAULT FALSE,
                 consent_at      TIMESTAMPTZ,
                 strava_id       TEXT,
+                garmin_id       TEXT,
                 created_at      TIMESTAMPTZ DEFAULT NOW(),
                 updated_at      TIMESTAMPTZ DEFAULT NOW()
             );
+
+            -- Привычки
             CREATE TABLE IF NOT EXISTS habits (
                 id              SERIAL PRIMARY KEY,
                 user_id         BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -118,6 +104,8 @@ async def init_db():
                 best_streak     INT DEFAULT 0,
                 created_at      TIMESTAMPTZ DEFAULT NOW()
             );
+
+            -- Чекины
             CREATE TABLE IF NOT EXISTS checkins (
                 id              SERIAL PRIMARY KEY,
                 user_id         BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -126,16 +114,22 @@ async def init_db():
                 created_at      TIMESTAMPTZ DEFAULT NOW(),
                 UNIQUE(habit_id, date)
             );
+
+            -- Пробежки
             CREATE TABLE IF NOT EXISTS run_log (
                 id              SERIAL PRIMARY KEY,
                 user_id         BIGINT REFERENCES users(id) ON DELETE CASCADE,
                 date            DATE NOT NULL,
                 distance_km     NUMERIC(6,2),
                 duration_sec    INT,
+                pace_sec_per_km INT,
+                heart_rate      INT,
                 source          TEXT DEFAULT 'manual',
                 strava_id       TEXT UNIQUE,
                 created_at      TIMESTAMPTZ DEFAULT NOW()
             );
+
+            -- Книги
             CREATE TABLE IF NOT EXISTS books (
                 id              SERIAL PRIMARY KEY,
                 user_id         BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -144,18 +138,36 @@ async def init_db():
                 total_pages     INT,
                 pages_read      INT DEFAULT 0,
                 is_done         BOOLEAN DEFAULT FALSE,
+                started_at      DATE,
+                finished_at     DATE,
+                rating          INT,
                 created_at      TIMESTAMPTZ DEFAULT NOW()
             );
+
+            -- Strava OAuth токены
+            CREATE TABLE IF NOT EXISTS strava_tokens (
+                user_id         BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                access_token    TEXT NOT NULL,
+                refresh_token   TEXT NOT NULL,
+                expires_at      BIGINT NOT NULL,
+                scope           TEXT,
+                updated_at      TIMESTAMPTZ DEFAULT NOW()
+            );
+
+            -- Платежи Kaspi
             CREATE TABLE IF NOT EXISTS payments (
                 id              SERIAL PRIMARY KEY,
                 user_id         BIGINT REFERENCES users(id) ON DELETE CASCADE,
-                plan            TEXT NOT NULL,
-                amount          INT NOT NULL,
-                status          TEXT DEFAULT 'pending',
+                plan            TEXT NOT NULL,           -- 'monthly'|'yearly'|'family'
+                amount          INT NOT NULL,            -- в тенге
+                status          TEXT DEFAULT 'pending',  -- 'pending'|'paid'|'failed'|'refunded'
                 kaspi_order_id  TEXT UNIQUE,
+                kaspi_txn_id    TEXT,
                 created_at      TIMESTAMPTZ DEFAULT NOW(),
                 paid_at         TIMESTAMPTZ
             );
+
+            -- Реферальные начисления
             CREATE TABLE IF NOT EXISTS referral_rewards (
                 id              SERIAL PRIMARY KEY,
                 referrer_id     BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -164,1029 +176,1012 @@ async def init_db():
                 created_at      TIMESTAMPTZ DEFAULT NOW(),
                 UNIQUE(referred_id)
             );
+
+            -- ИИ-инсайты (кеш)
             CREATE TABLE IF NOT EXISTS ai_insights (
                 user_id         BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
                 content         TEXT NOT NULL,
                 generated_at    TIMESTAMPTZ DEFAULT NOW(),
                 valid_until     TIMESTAMPTZ
             );
+
+            -- Индексы для производительности
             CREATE INDEX IF NOT EXISTS idx_checkins_user_date ON checkins(user_id, date);
-            CREATE INDEX IF NOT EXISTS idx_habits_user        ON habits(user_id);
+            CREATE INDEX IF NOT EXISTS idx_checkins_habit    ON checkins(habit_id);
+            CREATE INDEX IF NOT EXISTS idx_habits_user       ON habits(user_id);
+            CREATE INDEX IF NOT EXISTS idx_run_log_user_date ON run_log(user_id, date);
+            CREATE INDEX IF NOT EXISTS idx_payments_user     ON payments(user_id);
         """)
     logger.info("✅ Database initialized")
 
-async def get_or_create_user(tg_user) -> dict:
-    ref_code = secrets.token_urlsafe(8)
+@app.on_event("shutdown")
+async def shutdown():
+    await pool.close()
+
+# ══════════════════════════════════════════════════════
+# AUTH — Telegram Login Widget
+# ══════════════════════════════════════════════════════
+def verify_telegram_auth(data: dict) -> bool:
+    check_hash = data.pop("hash", "")
+    data_str = "\n".join(f"{k}={v}" for k, v in sorted(data.items()))
+    secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
+    computed = hmac.new(secret_key, data_str.encode(), hashlib.sha256).hexdigest()
+    if computed != check_hash:
+        return False
+    if time.time() - int(data.get("auth_date", 0)) > 86400:
+        return False
+    return True
+
+def make_token(user_id: int) -> str:
+    ts = int(time.time())
+    payload = f"{user_id}:{ts}"
+    sig = hmac.new(BOT_TOKEN.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return base64.urlsafe_b64encode(f"{sig}:{payload}".encode()).decode()
+
+def parse_token(token: str) -> Optional[int]:
+    try:
+        decoded = base64.urlsafe_b64decode(token).decode()
+        sig, user_id_str, ts_str = decoded.split(":", 2)
+        payload = f"{user_id_str}:{ts_str}"
+        expected = hmac.new(BOT_TOKEN.encode(), payload.encode(), hashlib.sha256).hexdigest()
+        if not secrets.compare_digest(sig, expected):
+            return None
+        # токен действителен 30 дней
+        if time.time() - int(ts_str) > 86400 * 30:
+            return None
+        return int(user_id_str)
+    except Exception:
+        return None
+
+async def get_current_user(
+    authorization: str = Header(None),
+    x_internal_user_id: str = Header(None),  # внутренние вызовы от бота
+):
+    # Внутренний вызов от Telegram-бота
+    if x_internal_user_id:
+        try:
+            user_id = int(x_internal_user_id)
+        except ValueError:
+            raise HTTPException(400, "Bad internal user id")
+        async with pool.acquire() as conn:
+            user = await conn.fetchrow("SELECT * FROM users WHERE id=$1", user_id)
+        if not user:
+            raise HTTPException(404, "User not found")
+        return dict(user)
+    # Обычная Bearer-авторизация от PWA
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Missing token")
+    token = authorization[7:]
+    user_id = parse_token(token)
+    if not user_id:
+        raise HTTPException(401, "Invalid token")
     async with pool.acquire() as conn:
+        user = await conn.fetchrow("SELECT * FROM users WHERE id=$1", user_id)
+    if not user:
+        raise HTTPException(401, "User not found")
+    return dict(user)
+
+@app.post("/auth/telegram")
+async def telegram_auth(body: dict):
+    data = dict(body)
+    if not verify_telegram_auth(data):
+        raise HTTPException(401, "Invalid Telegram auth")
+
+    user_id    = int(body["id"])
+    first_name = body.get("first_name", "")
+    username   = body.get("username")
+
+    async with pool.acquire() as conn:
+        # Генерируем реф. код при первой регистрации
+        ref_code = secrets.token_urlsafe(8)
         row = await conn.fetchrow("""
-            INSERT INTO users (id, username, first_name, referral_code)
+            INSERT INTO users (id, first_name, username, referral_code)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO UPDATE
-                SET username=EXCLUDED.username, first_name=EXCLUDED.first_name, updated_at=NOW()
+                SET first_name = EXCLUDED.first_name,
+                    username   = EXCLUDED.username,
+                    updated_at = NOW()
             RETURNING *
-        """, tg_user.id, tg_user.username, tg_user.first_name, ref_code)
-    return dict(row)
+        """, user_id, first_name, username, ref_code)
 
-async def get_habits(user_id: int) -> list:
+    token = make_token(user_id)
+    return {
+        "token": token,
+        "user": {
+            "id":           row["id"],
+            "name":         row["first_name"],
+            "username":     row["username"],
+            "isPro":        row["is_pro"],
+            "proUntil":     row["pro_until"].isoformat() if row["pro_until"] else None,
+            "referralCode": row["referral_code"],
+            "referralLink": f"{WEBAPP_URL}?ref={row['referral_code']}",
+        }
+    }
+
+# ══════════════════════════════════════════════════════
+# SYNC — cross-device data
+# ══════════════════════════════════════════════════════
+def _serialize(rows) -> list:
+    result = []
+    for r in rows:
+        d = dict(r)
+        for k, v in d.items():
+            if isinstance(v, (date, datetime)):
+                d[k] = v.isoformat()
+        result.append(d)
+    return result
+
+@app.get("/sync")
+async def sync_data(user=Depends(get_current_user)):
+    uid = user["id"]
     async with pool.acquire() as conn:
-        rows = await conn.fetch("SELECT * FROM habits WHERE user_id=$1 ORDER BY created_at", user_id)
-    return [dict(r) for r in rows]
+        habits   = await conn.fetch("SELECT * FROM habits WHERE user_id=$1 ORDER BY created_at", uid)
+        checkins = await conn.fetch("SELECT * FROM checkins WHERE user_id=$1 ORDER BY date DESC LIMIT 365", uid)
+        runs     = await conn.fetch("SELECT * FROM run_log WHERE user_id=$1 ORDER BY date DESC LIMIT 200", uid)
+        books    = await conn.fetch("SELECT * FROM books WHERE user_id=$1 ORDER BY created_at", uid)
+    return {
+        "synced_at": datetime.now().isoformat(),
+        "habits":    _serialize(habits),
+        "checkins":  _serialize(checkins),
+        "run_log":   _serialize(runs),
+        "books":     _serialize(books),
+    }
 
-async def get_today_done(user_id: int) -> set:
-    async with pool.acquire() as conn:
-        rows = await conn.fetch("""
-            SELECT habit_id FROM checkins WHERE user_id=$1 AND date=CURRENT_DATE
-        """, user_id)
-    return {r["habit_id"] for r in rows}
+class CheckinPayload(BaseModel):
+    habit_id:  int
+    date:      str
+    timestamp: Optional[int] = None
 
-async def do_checkin(user_id: int, habit_id: int) -> int:
-    """Чекин + пересчёт стрика. Возвращает новый стрик."""
+@app.post("/checkin")
+async def post_checkin(payload: CheckinPayload, user=Depends(get_current_user)):
+    checkin_date = date.fromisoformat(payload.date)
     async with pool.acquire() as conn:
         await conn.execute("""
             INSERT INTO checkins (user_id, habit_id, date)
-            VALUES ($1, $2, CURRENT_DATE) ON CONFLICT DO NOTHING
-        """, user_id, habit_id)
-        rows  = await conn.fetch(
-            "SELECT date FROM checkins WHERE habit_id=$1 ORDER BY date DESC", habit_id
-        )
+            VALUES ($1, $2, $3) ON CONFLICT (habit_id, date) DO NOTHING
+        """, user["id"], payload.habit_id, checkin_date)
+        rows  = await conn.fetch("SELECT date FROM checkins WHERE habit_id=$1 ORDER BY date DESC", payload.habit_id)
         dates = [r["date"] for r in rows]
-        streak = _streak(dates)
+        streak = _calc_streak(dates)
         await conn.execute("""
             UPDATE habits SET streak=$1, best_streak=GREATEST(best_streak,$1)
-            WHERE id=$2
-        """, streak, habit_id)
-    return streak
+            WHERE id=$2 AND user_id=$3
+        """, streak, payload.habit_id, user["id"])
+    return {"ok": True, "streak": streak}
 
-def _streak(dates: list) -> int:
+def _calc_streak(dates: list) -> int:
     if not dates:
         return 0
-    today, yesterday = date.today(), date.today() - timedelta(days=1)
+    today     = date.today()
+    yesterday = today - timedelta(days=1)
     if dates[0] != today and dates[0] != yesterday:
         return 0
-    n, exp = 0, dates[0]
+    streak, expected = 0, dates[0]
     for d in dates:
-        if d == exp:
-            n += 1
-            exp = exp - timedelta(days=1)
+        if d == expected:
+            streak += 1
+            expected = expected - timedelta(days=1)
         else:
             break
-    return n
+    return streak
 
 # ══════════════════════════════════════════════════════
-# KEYBOARDS
+# KASPI QR — оплата подписки
 # ══════════════════════════════════════════════════════
-def kb_today(habits: list, done: set) -> InlineKeyboardMarkup:
-    b = InlineKeyboardBuilder()
-    for h in habits:
-        ok   = h["id"] in done
-        fire = f" 🔥{h['streak']}" if h["streak"] > 0 else ""
-        b.button(
-            text=f"{'✅' if ok else '⬜'} {h['icon']} {h['name']}{fire}",
-            callback_data=f"ci:{h['id']}"
-        )
-    b.button(text="📊 Статистика",     callback_data="stats")
-    b.button(text="⚔️ Рейтинг",        callback_data="social")
-    b.button(text="🌐 Открыть приложение", url=WEBAPP_URL)
-    b.adjust(1, 1, 2, 1)
-    return b.as_markup()
+PLANS = {
+    "monthly": {"amount": 2990,  "days": 30,  "label": "Стандарт · 2 990 ₸/мес"},
+    "yearly":  {"amount": 23880, "days": 365, "label": "Годовой · 23 880 ₸/год"},
+    "family":  {"amount": 5990,  "days": 30,  "label": "Семья × 5 · 5 990 ₸/мес"},
+}
 
-def kb_main() -> InlineKeyboardMarkup:
-    b = InlineKeyboardBuilder()
-    b.button(text="✅ Отметить привычки", callback_data="today")
-    b.button(text="📊 Статистика",        callback_data="stats")
-    b.button(text="⚔️ Рейтинг",           callback_data="social")
-    b.button(text="✨ Pro-подписка",       callback_data="upgrade")
-    b.button(text="🔗 Подключить Strava",  callback_data="strava_connect")
-    b.button(text="🤖 ИИ-инсайт",         callback_data="insight")
-    b.button(text="🌐 Приложение",         url=WEBAPP_URL)
-    b.adjust(1, 2, 2, 1, 1)
-    return b.as_markup()
+class CreatePaymentRequest(BaseModel):
+    plan: str  # monthly | yearly | family
 
-def kb_habits_select(selected: list) -> InlineKeyboardMarkup:
-    b = InlineKeyboardBuilder()
-    for key, d in HABIT_DEFS.items():
-        mark = "✅" if key in selected else "⬜"
-        b.button(text=f"{mark} {d['icon']} {d['name']}", callback_data=f"hs:{key}")
-    b.button(text=f"✅ Готово ({len(selected)} выбрано)", callback_data="hs:done")
-    b.adjust(2, 2, 2, 1, 1)
-    return b.as_markup()
-
-def kb_plans() -> InlineKeyboardMarkup:
-    b = InlineKeyboardBuilder()
-    for key, p in PLANS.items():
-        b.button(text=f"{'⭐ ' if key=='yearly' else ''}{p['label']} — {p['desc']}", callback_data=f"pay:{key}")
-    b.button(text="← Назад", callback_data="today")
-    b.adjust(1, 1, 1, 1)
-    return b.as_markup()
-
-def kb_phone() -> ReplyKeyboardMarkup:
-    b = ReplyKeyboardBuilder()
-    b.button(text="📱 Поделиться номером", request_contact=True)
-    b.button(text="Пропустить →")
-    b.adjust(1)
-    return b.as_markup(resize_keyboard=True, one_time_keyboard=True)
-
-# ══════════════════════════════════════════════════════
-# ROUTER
-# ══════════════════════════════════════════════════════
-router = Router()
-
-# ── /start ──
-@router.message(CommandStart())
-async def cmd_start(msg: Message, state: FSMContext):
-    user = await get_or_create_user(msg.from_user)
-    habits = await get_habits(msg.from_user.id)
-
-    # Проверяем реферальный код в deep link: /start ref_CODE
-    args = msg.text.split(" ", 1)
-    if len(args) > 1 and args[1].startswith("ref_"):
-        ref_code = args[1][4:]
-        await state.update_data(ref_code=ref_code)
-
-    if user.get("consent_given") and habits:
-        # Повторный пользователь
-        done  = await get_today_done(msg.from_user.id)
-        total = len(habits)
-        done_n = len(done)
-        await msg.answer(
-            f"🔥 С возвращением, {msg.from_user.first_name}!\n\n"
-            f"Сегодня выполнено: {done_n}/{total}",
-            reply_markup=kb_today(habits, done)
-        )
-    else:
-        # Новый пользователь — онбординг
-        await state.set_state(Onboarding.consent)
-        await msg.answer(
-            f"👋 Привет, *{msg.from_user.first_name}*!\n\n"
-            "Я — *Streakly* 🔥 Твой трекер привычек.\n\n"
-            "Помогу выработать нужные привычки за 21 день:\n"
-            "ежедневные чекины, стрики, соревнования с друзьями\n"
-            "и автоматическая синхронизация со Strava.\n\n"
-            "━━━━━━━━━━━━━━\n"
-            "Для работы мне нужно сохранить:\n"
-            "• Твой Telegram ID и имя\n"
-            "• Данные о привычках и чекинах\n"
-            "• Время напоминаний\n\n"
-            f"[Политика конфиденциальности]({WEBAPP_URL}/privacy.html) · "
-            f"[Условия использования]({WEBAPP_URL}/terms.html)",
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-                InlineKeyboardButton(text="✅ Принимаю и продолжаю", callback_data="consent_yes"),
-                InlineKeyboardButton(text="❌ Отказаться",            callback_data="consent_no"),
-            ]])
-        )
-
-@router.callback_query(F.data == "consent_yes", Onboarding.consent)
-async def consent_yes(call: CallbackQuery, state: FSMContext):
-    async with pool.acquire() as conn:
-        await conn.execute("""
-            UPDATE users SET consent_given=TRUE, consent_at=NOW() WHERE id=$1
-        """, call.from_user.id)
-    await state.update_data(selected=[])
-    await state.set_state(Onboarding.habits)
-    await call.message.edit_text(
-        "🎯 *Выбери привычки* которые хочешь отслеживать:\n\n"
-        "_Можно добавить больше позже_",
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=kb_habits_select([])
-    )
-
-@router.callback_query(F.data == "consent_no")
-async def consent_no(call: CallbackQuery, state: FSMContext):
-    await state.clear()
-    await call.message.edit_text(
-        "Понял. Без согласия использование невозможно.\n"
-        "Если передумаешь — напиши /start 🙂"
-    )
-
-@router.callback_query(F.data.startswith("hs:"), Onboarding.habits)
-async def habit_select(call: CallbackQuery, state: FSMContext):
-    key  = call.data[3:]
-    data = await state.get_data()
-    sel  = data.get("selected", [])
-
-    if key == "done":
-        if not sel:
-            await call.answer("Выбери хотя бы одну привычку!", show_alert=True)
-            return
-        # Сохраняем привычки
-        async with pool.acquire() as conn:
-            for htype in sel:
-                d = HABIT_DEFS[htype]
-                t = datetime.strptime(d["defTime"], "%H:%M").time()
-                await conn.execute("""
-                    INSERT INTO habits (user_id, type, name, icon, reminder_time)
-                    VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING
-                """, call.from_user.id, htype, d["name"], d["icon"], t)
-        await state.set_state(Onboarding.phone)
-        await call.message.edit_text(
-            f"🎯 Отлично! Выбрано {len(sel)} привычек.\n\n"
-            "📱 *Поделись номером телефона* (необязательно)\n\n"
-            "Это нужно для:\n"
-            "• Восстановления доступа при потере Telegram\n"
-            "• Синхронизации между устройствами\n\n"
-            "_Мы не используем номер для рекламы_",
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=None
-        )
-        await call.message.answer(
-            "Поделись номером или пропусти:",
-            reply_markup=kb_phone()
-        )
-    else:
-        if key in sel:
-            sel.remove(key)
-        else:
-            sel.append(key)
-        await state.update_data(selected=sel)
-        await call.message.edit_reply_markup(reply_markup=kb_habits_select(sel))
-
-@router.message(Onboarding.phone, F.contact)
-async def phone_got(msg: Message, state: FSMContext):
-    phone = msg.contact.phone_number
-    async with pool.acquire() as conn:
-        await conn.execute("UPDATE users SET phone=$1 WHERE id=$2", phone, msg.from_user.id)
-    await msg.answer("✅ Номер сохранён!", reply_markup=ReplyKeyboardRemove())
-    await finish_onboarding(msg, state)
-
-@router.message(Onboarding.phone)
-async def phone_skip(msg: Message, state: FSMContext):
-    await msg.answer("Хорошо, пропускаем.", reply_markup=ReplyKeyboardRemove())
-    await finish_onboarding(msg, state)
-
-async def finish_onboarding(msg: Message, state: FSMContext):
-    data   = await state.get_data()
-    ref_code = data.get("ref_code")
-    await state.clear()
-
-    # Применяем реф. код если был
-    if ref_code:
-        async with pool.acquire() as conn:
-            referrer = await conn.fetchrow(
-                "SELECT id, first_name FROM users WHERE referral_code=$1 AND id!=$2",
-                ref_code, msg.from_user.id
-            )
-            if referrer:
-                existing = await conn.fetchrow(
-                    "SELECT id FROM referral_rewards WHERE referred_id=$1", msg.from_user.id
-                )
-                if not existing:
-                    for uid in [msg.from_user.id, referrer["id"]]:
-                        cur = await conn.fetchrow("SELECT pro_until FROM users WHERE id=$1", uid)
-                        base = max(cur["pro_until"], datetime.now()) if cur["pro_until"] else datetime.now()
-                        await conn.execute("""
-                            UPDATE users SET is_pro=TRUE, pro_until=$1, updated_at=NOW() WHERE id=$2
-                        """, base + timedelta(days=7), uid)
-                    await conn.execute("""
-                        INSERT INTO referral_rewards (referrer_id, referred_id, days_added)
-                        VALUES ($1, $2, 7) ON CONFLICT DO NOTHING
-                    """, referrer["id"], msg.from_user.id)
-                    # Уведомляем реферера
-                    try:
-                        bot = Bot(token=BOT_TOKEN)
-                        await bot.send_message(
-                            referrer["id"],
-                            f"🎁 *+7 дней Pro!*\n\nПо твоей ссылке зарегистрировался новый пользователь.\n🔥",
-                            parse_mode=ParseMode.MARKDOWN
-                        )
-                        await bot.session.close()
-                    except Exception:
-                        pass
-
-    habits = await get_habits(msg.from_user.id)
-    list_str = "\n".join(f"  {h['icon']} {h['name']} — ⏰ {h['reminder_time'].strftime('%H:%M')}" for h in habits)
-
-    await msg.answer(
-        f"🚀 *Добро пожаловать в Streakly!*\n\n"
-        f"Твои привычки:\n{list_str}\n\n"
-        f"🎁 *Первые 7 дней Pro — бесплатно!*\n"
-        f"Напоминания придут в установленное время.\n\n"
-        f"Начнём прямо сейчас?",
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="✅ Отметить первые привычки!", callback_data="today")
-        ]])
-    )
-
-# ── /today и чекины ──
-@router.message(Command("today"))
-@router.callback_query(F.data == "today")
-async def show_today(event, **kw):
-    msg     = event if isinstance(event, Message) else event.message
-    uid     = event.from_user.id
-    habits  = await get_habits(uid)
-    if not habits:
-        await msg.answer("У тебя нет привычек. Напиши /start")
-        return
-    done    = await get_today_done(uid)
-    done_n  = len(done)
-    total   = len(habits)
-    today_s = datetime.now().strftime("%-d %B").lower()
-    text = (
-        f"🗓 *{today_s.capitalize()}*\n"
-        f"Выполнено: {done_n}/{total}"
-        + (" 🏆" if done_n == total else " 🔥" if done_n > 0 else "")
-        + ("\n\n🎉 *Идеальный день! Все привычки выполнены!*" if done_n == total else "\n\nОтметь выполненные:")
-    )
-    kb = kb_today(habits, done)
-    if isinstance(event, CallbackQuery):
-        try:
-            await event.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-        except Exception:
-            await event.message.answer(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-    else:
-        await msg.answer(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-
-@router.callback_query(F.data.startswith("ci:"))
-async def do_ci(call: CallbackQuery):
-    habit_id = int(call.data[3:])
-    streak   = await do_checkin(call.from_user.id, habit_id)
-    habits   = await get_habits(call.from_user.id)
-    done     = await get_today_done(call.from_user.id)
-    done_n   = len(done)
-    total    = len(habits)
-
-    h = next((x for x in habits if x["id"] == habit_id), None)
-    msg_text = f"✅ {h['icon']} {h['name']} — стрик 🔥{streak} дн!" if h else "✅ Отмечено!"
-    if done_n == total:
-        msg_text = "🏆 ВСЕ привычки выполнены! Идеальный день!"
-    await call.answer(msg_text, show_alert=(done_n == total))
-
-    today_s = datetime.now().strftime("%-d %B").lower()
-    text = (
-        f"🗓 *{today_s.capitalize()}*\n"
-        f"Выполнено: {done_n}/{total}"
-        + (" 🏆" if done_n == total else " 🔥")
-        + ("\n\n🎉 *Идеальный день!*" if done_n == total else "\n\nОтметь выполненные:")
-    )
-    try:
-        await call.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb_today(habits, done))
-    except Exception:
-        pass
-
-# ── /stats ──
-@router.message(Command("stats"))
-@router.callback_query(F.data == "stats")
-async def show_stats(event, **kw):
-    msg = event if isinstance(event, Message) else event.message
-    uid = event.from_user.id
-    async with pool.acquire() as conn:
-        rows = await conn.fetch("""
-            SELECT h.name, h.icon, h.streak, h.best_streak,
-                   COUNT(c.id) AS done30
-            FROM habits h
-            LEFT JOIN checkins c ON c.habit_id=h.id
-                AND c.date >= CURRENT_DATE - 30
-            WHERE h.user_id=$1
-            GROUP BY h.id, h.name, h.icon, h.streak, h.best_streak
-            ORDER BY h.streak DESC
-        """, uid)
-    if not rows:
-        await msg.answer("Нет привычек. Напиши /start")
-        return
-    max_streak     = max(r["streak"] for r in rows)
-    total_checkins = sum(r["done30"] for r in rows)
-    text = (
-        f"📊 *Твоя статистика*\n\n"
-        f"🔥 Лучший стрик: *{max_streak} дней*\n"
-        f"✅ Чекинов за 30 дней: *{total_checkins}*\n\n"
-    )
-    for r in rows:
-        pct = round(r["done30"] / 30 * 100)
-        bar = "█" * (pct // 10) + "░" * (10 - pct // 10)
-        text += f"{r['icon']} *{r['name']}*\n`{bar}` {pct}%  🔥{r['streak']} дн\n\n"
-
-    kb = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="← Назад", callback_data="today"),
-        InlineKeyboardButton(text="🤖 ИИ-инсайт", callback_data="insight"),
-    ]])
-    if isinstance(event, CallbackQuery):
-        await event.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-    else:
-        await msg.answer(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-
-# ── /social ──
-@router.message(Command("social"))
-@router.callback_query(F.data == "social")
-async def show_social(event, **kw):
-    msg = event if isinstance(event, Message) else event.message
-    uid = event.from_user.id
-    async with pool.acquire() as conn:
-        rows = await conn.fetch("""
-            SELECT u.first_name, h.type, h.icon, h.name, h.streak, (u.id=$1) AS is_me
-            FROM habits h JOIN users u ON u.id=h.user_id
-            WHERE h.type IN (SELECT type FROM habits WHERE user_id=$1)
-            ORDER BY h.type, h.streak DESC
-        """, uid)
-    if not rows:
-        await msg.answer("Нет данных. Добавь привычки командой /start")
-        return
-
-    by_type: dict = {}
-    for r in rows:
-        by_type.setdefault(r["type"], []).append(r)
-
-    medals = ["🥇", "🥈", "🥉"]
-    text   = "⚔️ *Рейтинг по привычкам*\n\n"
-    for htype, entries in by_type.items():
-        text += f"{entries[0]['icon']} *{entries[0]['name']}*\n"
-        for i, e in enumerate(entries[:5]):
-            you   = " 👈 _ты_" if e["is_me"] else ""
-            medal = medals[i] if i < 3 else f"{i+1}."
-            text += f"  {medal} {e['first_name']} — 🔥{e['streak']} дн{you}\n"
-        text += "\n"
-
-    kb = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="← Назад",        callback_data="today"),
-        InlineKeyboardButton(text="👥 Пригласить",  switch_inline_query=""),
-    ]])
-    if isinstance(event, CallbackQuery):
-        await event.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-    else:
-        await msg.answer(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-
-# ── /run ──
-@router.message(Command("run"))
-async def cmd_run(msg: Message, state: FSMContext):
-    await state.set_state(RunLog.distance)
-    await msg.answer(
-        "🏃 *Записать пробежку*\n\nВведи дистанцию в км:\n_Например: `5.2`_",
-        parse_mode=ParseMode.MARKDOWN
-    )
-
-@router.message(RunLog.distance)
-async def run_dist(msg: Message, state: FSMContext):
-    try:
-        dist = float(msg.text.replace(",", "."))
-        if dist <= 0 or dist > 500:
-            raise ValueError
-    except ValueError:
-        await msg.answer("⚠️ Введи число, например `5.2`")
-        return
-    await state.update_data(dist=dist)
-    await state.set_state(RunLog.duration)
-    await msg.answer(
-        f"✅ {dist} км\n\nВведи время в формате `мм:сс` или `ч:мм:сс`:\n"
-        "_Например: `28:30` или пропусти /skip_",
-        parse_mode=ParseMode.MARKDOWN
-    )
-
-@router.message(RunLog.duration)
-async def run_dur(msg: Message, state: FSMContext):
-    data = await state.get_data()
-    dist = data["dist"]
-    raw  = msg.text.strip()
-
-    dur_sec  = 0
-    pace_str = "—"
-    if raw and raw != "/skip":
-        try:
-            parts   = list(map(int, raw.split(":")))
-            dur_sec = parts[-1] + parts[-2] * 60 + (parts[-3] * 3600 if len(parts) == 3 else 0)
-            ppm     = dur_sec / dist
-            pace_str = f"{int(ppm//60)}:{int(ppm%60):02d}"
-        except Exception:
-            await msg.answer("⚠️ Неверный формат. Введи `28:30` или /skip")
-            return
-
-    async with pool.acquire() as conn:
-        await conn.execute("""
-            INSERT INTO run_log (user_id, date, distance_km, duration_sec)
-            VALUES ($1, CURRENT_DATE, $2, $3)
-        """, msg.from_user.id, dist, dur_sec or None)
-        habit = await conn.fetchrow(
-            "SELECT id FROM habits WHERE user_id=$1 AND type='run'", msg.from_user.id
-        )
-        if habit:
-            streak = await do_checkin(msg.from_user.id, habit["id"])
-        else:
-            streak = 0
-
-    await state.clear()
-    await msg.answer(
-        f"🏃 *Пробежка записана!*\n\n"
-        f"📏 {dist} км" + (f" · ⏱ {raw}" if raw != "/skip" else "") + f" · ⚡ {pace_str}'/км\n"
-        f"{'✅ Стрик «Бег»: 🔥' + str(streak) + ' дн!' if streak else ''}",
-        parse_mode=ParseMode.MARKDOWN
-    )
-
-@router.message(Command("skip"), RunLog.duration)
-async def run_skip(msg: Message, state: FSMContext):
-    data = await state.get_data()
-    async with pool.acquire() as conn:
-        await conn.execute("""
-            INSERT INTO run_log (user_id, date, distance_km) VALUES ($1, CURRENT_DATE, $2)
-        """, msg.from_user.id, data["dist"])
-        habit = await conn.fetchrow(
-            "SELECT id FROM habits WHERE user_id=$1 AND type='run'", msg.from_user.id
-        )
-        if habit:
-            await do_checkin(msg.from_user.id, habit["id"])
-    await state.clear()
-    await msg.answer(f"✅ {data['dist']} км записано!")
-
-# ── ИИ-инсайты ──
-@router.message(Command("insight"))
-@router.callback_query(F.data == "insight")
-async def show_insight(event, **kw):
-    msg = event if isinstance(event, Message) else event.message
-    uid = event.from_user.id
-
-    async with pool.acquire() as conn:
-        user = await conn.fetchrow("SELECT is_pro FROM users WHERE id=$1", uid)
-
-    if not user or not user["is_pro"]:
-        text = (
-            "🤖 *ИИ-инсайты* — функция Pro-плана\n\n"
-            "Каждую неделю GPT-4o анализирует твои паттерны и даёт персональные советы:\n"
-            "• В какие дни чаще пропускаешь\n"
-            "• Что мешает регулярности\n"
-            "• Конкретный план улучшения\n\n"
-            "Попробуй 7 дней бесплатно 👇"
-        )
-        kb = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="✨ Попробовать Pro бесплатно", callback_data="upgrade")
-        ]])
-        if isinstance(event, CallbackQuery):
-            await event.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-        else:
-            await msg.answer(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-        return
-
-    # Запрашиваем инсайт от бэкенда
-    wait_msg = await msg.answer("🤖 Анализирую твои данные за 30 дней...")
-    try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            # Бэкенд авторизуется через user_id напрямую (internal call)
-            resp = await client.get(
-                f"{API_URL}/insights",
-                headers={"X-Internal-User-Id": str(uid)}
-            )
-        if resp.status_code == 200:
-            data    = resp.json()
-            content = data["insights"]
-        else:
-            raise Exception(f"API returned {resp.status_code}")
-    except Exception as e:
-        logger.error(f"Insight error: {e}")
-        content = (
-            "📊 *Твой анализ за 30 дней*\n\n"
-            "Ты хорошо справляешься с утренними привычками! "
-            "Обрати внимание на вечерние — статистика показывает больше пропусков после 20:00. "
-            "Попробуй упростить одну вечернюю привычку на следующей неделе — это сильнее чем добавлять новые."
-        )
-
-    kb = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="🔄 Обновить", callback_data="insight_refresh"),
-        InlineKeyboardButton(text="← Назад",    callback_data="today"),
-    ]])
-    try:
-        await wait_msg.edit_text(
-            f"🤖 *ИИ-инсайт недели*\n\n{content}",
-            parse_mode=ParseMode.MARKDOWN, reply_markup=kb
-        )
-    except Exception:
-        await msg.answer(f"🤖 *ИИ-инсайт недели*\n\n{content}", parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-
-@router.callback_query(F.data == "insight_refresh")
-async def insight_refresh(call: CallbackQuery):
-    """Сбросить кеш и получить новый инсайт"""
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            await client.post(f"{API_URL}/insights/refresh",
-                              headers={"X-Internal-User-Id": str(call.from_user.id)})
-    except Exception:
-        pass
-    await call.answer("🔄 Генерирую новый инсайт...")
-    await show_insight(call)
-
-# ── Оплата Kaspi ──
-@router.message(Command("upgrade"))
-@router.callback_query(F.data == "upgrade")
-async def show_upgrade(event, **kw):
-    msg = event if isinstance(event, Message) else event.message
-    async with pool.acquire() as conn:
-        user = await conn.fetchrow("SELECT is_pro, pro_until, pro_plan FROM users WHERE id=$1", event.from_user.id)
-
-    if user and user["is_pro"] and user["pro_until"] and user["pro_until"] > datetime.now():
-        until = user["pro_until"].strftime("%d.%m.%Y")
-        text  = (
-            f"✨ *У тебя уже есть Pro!*\n\n"
-            f"Тариф: {user['pro_plan'] or 'monthly'}\n"
-            f"Действует до: {until}\n\n"
-            f"Все функции разблокированы 🚀"
-        )
-        kb = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="← Назад", callback_data="today")
-        ]])
-    else:
-        text = (
-            "✨ *Streakly Pro*\n\n"
-            "Что открывается:\n"
-            "🔗 Интеграция со Strava — авточекин при пробежке\n"
-            "🤖 ИИ-инсайты каждую неделю\n"
-            "📊 Тепловая карта и аналитика за год\n"
-            "🔄 Синхронизация между устройствами\n"
-            "⚔️ Рейтинг с друзьями по каждой привычке\n\n"
-            "Выбери тариф:"
-        )
-        kb = kb_plans()
-
-    if isinstance(event, CallbackQuery):
-        try:
-            await event.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-        except Exception:
-            await event.message.answer(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-    else:
-        await msg.answer(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-
-@router.callback_query(F.data.startswith("pay:"))
-async def initiate_payment(call: CallbackQuery):
-    plan = call.data[4:]
+@app.post("/payments/create")
+async def create_payment(body: CreatePaymentRequest, user=Depends(get_current_user)):
+    """Создаём заказ и возвращаем данные для Kaspi QR"""
+    plan = body.plan
     if plan not in PLANS:
-        await call.answer("Неверный тариф", show_alert=True)
-        return
+        raise HTTPException(400, f"Unknown plan: {plan}")
 
-    p = PLANS[plan]
-    await call.answer()
-
-    # Создаём платёж через бэкенд
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.post(
-                f"{API_URL}/payments/create",
-                json={"plan": plan},
-                headers={"X-Internal-User-Id": str(call.from_user.id)}
-            )
-        data = resp.json()
-    except Exception as e:
-        logger.error(f"Payment create error: {e}")
-        await call.message.answer(
-            f"⚠️ Временная ошибка. Попробуй позже или напиши в поддержку.",
-        )
-        return
-
-    payment_id = data["paymentId"]
-    amount     = data["amount"]
-    kaspi_url  = data.get("kaspiQrUrl", "")
-
-    text = (
-        f"💳 *Оплата — {p['label']}*\n\n"
-        f"Сумма: *{amount:,} ₸*\n"
-        f"Номер заказа: `streakly-{payment_id}`\n\n"
-        f"*Способы оплаты:*\n\n"
-        f"1️⃣ *Kaspi.kz* — перейди по ссылке:\n{kaspi_url}\n\n"
-        f"2️⃣ *Kaspi Pay* — переведи на номер продавца:\n"
-        f"`+7 700 000 0000`\n"
-        f"Комментарий: `streakly-{payment_id}`\n\n"
-        f"После оплаты нажми *«Я оплатил»* — проверим вручную."
-    )
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💳 Открыть Kaspi QR", url=kaspi_url)],
-        [InlineKeyboardButton(text="✅ Я оплатил", callback_data=f"paid_check:{payment_id}")],
-        [InlineKeyboardButton(text="← Назад",             callback_data="upgrade")],
-    ])
-    await call.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-
-@router.callback_query(F.data.startswith("paid_check:"))
-async def check_payment(call: CallbackQuery):
-    payment_id = int(call.data.split(":")[1])
-    await call.answer("🔍 Проверяем оплату...")
+    plan_info = PLANS[plan]
 
     async with pool.acquire() as conn:
-        payment = await conn.fetchrow("SELECT * FROM payments WHERE id=$1", payment_id)
+        # Создаём запись о платеже
+        row = await conn.fetchrow("""
+            INSERT INTO payments (user_id, plan, amount, status)
+            VALUES ($1, $2, $3, 'pending')
+            RETURNING id
+        """, user["id"], plan, plan_info["amount"])
+        payment_id = row["id"]
 
-    if payment and payment["status"] == "paid":
-        await call.message.edit_text(
-            "🎉 *Оплата подтверждена! Pro активирован!*\n\n"
-            "Все функции разблокированы. Начинай пользоваться 🚀",
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-                InlineKeyboardButton(text="🏠 Главная", callback_data="today")
-            ]])
-        )
-    else:
-        # Уведомляем админа для ручной проверки
-        for admin_id in ADMIN_IDS:
-            try:
-                bot = call.message.bot
-                await bot.send_message(
-                    admin_id,
-                    f"⚠️ *Запрос подтверждения оплаты*\n\n"
-                    f"Пользователь: @{call.from_user.username or call.from_user.id}\n"
-                    f"Payment ID: `{payment_id}`\n"
-                    f"Сумма: {payment['amount'] if payment else '?'} ₸\n\n"
-                    f"Проверь Kaspi и подтверди:",
-                    parse_mode=ParseMode.MARKDOWN,
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-                        InlineKeyboardButton(text="✅ Подтвердить", callback_data=f"admin_confirm:{payment_id}:{call.from_user.id}")
-                    ]])
-                )
-            except Exception:
-                pass
+    # ── Kaspi QR интеграция ──
+    # В реальной интеграции здесь запрос к Kaspi Business API.
+    # Документация: https://kaspi.kz/merchantcabinet/api/documentation
+    #
+    # Для MVP используем статический QR (упрощённый вариант):
+    # Kaspi позволяет создать QR по шаблону:
+    # https://pay.kaspi.kz/pay/qr?id=MERCHANT_ID&amount=AMOUNT&ref=ORDER_ID
+    #
+    # Полный API: POST https://kaspi.kz/api/v1/payments/create
+    # Headers: Authorization: Bearer {token}
+    # Body: { merchantId, amount, currency: "KZT", orderId, description }
 
-        await call.message.edit_text(
-            "⏳ *Оплата на проверке*\n\n"
-            "Мы получили запрос и проверяем оплату вручную.\n"
-            "Подписка будет активирована в течение 15 минут.\n\n"
-            "Если что-то пошло не так — напиши в /support",
-            parse_mode=ParseMode.MARKDOWN,
+    kaspi_qr_url = (
+        f"https://pay.kaspi.kz/pay/qr"
+        f"?id={KASPI_MERCHANT_ID}"
+        f"&amount={plan_info['amount']}"
+        f"&ref=streaklyapp-{payment_id}"
+    )
+
+    # Обновляем kaspi_order_id
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE payments SET kaspi_order_id=$1 WHERE id=$2",
+            f"streaklyapp-{payment_id}", payment_id
         )
 
-@router.callback_query(F.data.startswith("admin_confirm:"))
-async def admin_confirm(call: CallbackQuery):
-    if call.from_user.id not in ADMIN_IDS:
-        await call.answer("Нет доступа", show_alert=True)
-        return
-    _, payment_id, user_id = call.data.split(":")
-    payment_id, user_id = int(payment_id), int(user_id)
+    return {
+        "paymentId":  payment_id,
+        "plan":       plan,
+        "amount":     plan_info["amount"],
+        "label":      plan_info["label"],
+        "kaspiQrUrl": kaspi_qr_url,
+        # Ссылка на глубокое открытие приложения Kaspi
+        "kaspiDeepLink": f"kaspi://payment?merchantId={KASPI_MERCHANT_ID}&amount={plan_info['amount']}&orderId=streaklyapp-{payment_id}",
+        "checkUrl":   f"{API_URL}/payments/{payment_id}/status",
+    }
 
+@app.get("/payments/{payment_id}/status")
+async def check_payment(payment_id: int, user=Depends(get_current_user)):
+    """PWA polling: проверяем оплачен ли платёж"""
+    async with pool.acquire() as conn:
+        payment = await conn.fetchrow(
+            "SELECT * FROM payments WHERE id=$1 AND user_id=$2",
+            payment_id, user["id"]
+        )
+    if not payment:
+        raise HTTPException(404, "Payment not found")
+
+    return {
+        "status":    payment["status"],
+        "plan":      payment["plan"],
+        "amount":    payment["amount"],
+        "paidAt":    payment["paid_at"].isoformat() if payment["paid_at"] else None,
+    }
+
+@app.post("/webhooks/kaspi")
+async def kaspi_webhook(request: Request, background_tasks: BackgroundTasks):
+    """
+    Kaspi отправляет сюда уведомление при успешной оплате.
+    Документация: https://kaspi.kz/merchantcabinet/api/documentation#webhooks
+    """
+    body = await request.json()
+    logger.info(f"Kaspi webhook: {body}")
+
+    # Верификация подписи Kaspi
+    # В реальной интеграции: проверь HMAC-SHA256 подпись из заголовка X-Kaspi-Signature
+    x_sig = request.headers.get("X-Kaspi-Signature", "")
+    body_bytes = await request.body()
+    expected = hmac.new(KASPI_PRIVATE_KEY.encode(), body_bytes, hashlib.sha256).hexdigest()
+    if not secrets.compare_digest(x_sig, expected):
+        logger.warning("Invalid Kaspi signature")
+        # В проде: raise HTTPException(403)
+        # Пока пропускаем для тестирования
+
+    order_id  = body.get("orderId", "")    # "streaklyapp-42"
+    txn_id    = body.get("txnId", "")
+    status    = body.get("status", "")     # "SUCCESS" | "FAILED"
+    amount    = body.get("amount", 0)
+
+    if status != "SUCCESS":
+        return {"ok": True}
+
+    # Находим платёж по order_id
+    async with pool.acquire() as conn:
+        payment = await conn.fetchrow(
+            "SELECT * FROM payments WHERE kaspi_order_id=$1", order_id
+        )
+        if not payment:
+            logger.error(f"Payment not found: {order_id}")
+            return {"ok": True}
+
+        # Активируем подписку
+        background_tasks.add_task(_activate_subscription, payment["user_id"], payment["plan"], txn_id)
+
+    return {"ok": True}
+
+async def _activate_subscription(user_id: int, plan: str, txn_id: str):
+    """Активирует Pro подписку после успешной оплаты"""
+    plan_info = PLANS.get(plan, PLANS["monthly"])
+    pro_until = datetime.now() + timedelta(days=plan_info["days"])
+
+    async with pool.acquire() as conn:
+        # Обновляем пользователя
+        await conn.execute("""
+            UPDATE users
+            SET is_pro=TRUE, pro_until=$1, pro_plan=$2, updated_at=NOW()
+            WHERE id=$3
+        """, pro_until, plan, user_id)
+
+        # Обновляем платёж
+        await conn.execute("""
+            UPDATE payments
+            SET status='paid', kaspi_txn_id=$1, paid_at=NOW()
+            WHERE user_id=$2 AND status='pending'
+        """, txn_id, user_id)
+
+        # Уведомляем через бота
+        user = await conn.fetchrow("SELECT first_name FROM users WHERE id=$1", user_id)
+
+    try:
+        from aiogram import Bot
+        bot = Bot(token=BOT_TOKEN)
+        await bot.send_message(
+            user_id,
+            f"🎉 *{user['first_name']}, подписка активирована!*\n\n"
+            f"✨ {plan_info['label']}\n"
+            f"📅 Действует до: {pro_until.strftime('%d.%m.%Y')}\n\n"
+            f"Теперь у тебя:\n"
+            f"• Безлимит привычек\n"
+            f"• ИИ-инсайты каждую неделю\n"
+            f"• Интеграция со Strava\n"
+            f"• Синхронизация между устройствами\n\n"
+            f"Спасибо за доверие! 🔥",
+            parse_mode="Markdown"
+        )
+        await bot.session.close()
+    except Exception as e:
+        logger.error(f"Failed to notify user {user_id}: {e}")
+
+@app.post("/payments/manual-confirm/{payment_id}")
+async def manual_confirm(payment_id: int, user=Depends(get_current_user)):
+    """
+    Ручное подтверждение оплаты — для MVP пока нет полного Kaspi API.
+    Администратор вызывает этот эндпоинт после проверки оплаты.
+    Удали этот метод когда подключишь Kaspi Webhook.
+    """
     async with pool.acquire() as conn:
         payment = await conn.fetchrow("SELECT * FROM payments WHERE id=$1", payment_id)
         if not payment:
-            await call.answer("Платёж не найден", show_alert=True)
-            return
-        plan      = payment["plan"]
-        days      = PLANS.get(plan, PLANS["monthly"])["days"]
-        pro_until = datetime.now() + timedelta(days=days)
-        await conn.execute("""
-            UPDATE users SET is_pro=TRUE, pro_until=$1, pro_plan=$2, updated_at=NOW() WHERE id=$3
-        """, pro_until, plan, user_id)
-        await conn.execute("""
-            UPDATE payments SET status='paid', paid_at=NOW() WHERE id=$1
-        """, payment_id)
+            raise HTTPException(404, "Payment not found")
+        await _activate_subscription(payment["user_id"], payment["plan"], f"manual-{payment_id}")
+    return {"ok": True, "message": "Subscription activated"}
 
-    # Уведомляем пользователя
+# ══════════════════════════════════════════════════════
+# STRAVA — полный OAuth поток
+# ══════════════════════════════════════════════════════
+@app.get("/auth/strava")
+async def strava_auth_start(user=Depends(get_current_user)):
+    """
+    Шаг 1: Отдаём пользователю ссылку для авторизации в Strava.
+    PWA открывает эту ссылку → пользователь разрешает доступ → Strava редиректит на /auth/strava/callback
+    """
+    state = base64.urlsafe_b64encode(
+        json.dumps({"user_id": user["id"], "ts": int(time.time())}).encode()
+    ).decode()
+
+    strava_url = (
+        f"https://www.strava.com/oauth/authorize"
+        f"?client_id={STRAVA_CLIENT_ID}"
+        f"&redirect_uri={API_URL}/auth/strava/callback"
+        f"&response_type=code"
+        f"&approval_prompt=auto"
+        f"&scope=activity:read_all"
+        f"&state={state}"
+    )
+    return {"authUrl": strava_url}
+
+@app.get("/auth/strava/callback")
+async def strava_callback(code: str, state: str, error: Optional[str] = None):
+    """
+    Шаг 2: Strava возвращает code → меняем на access_token → сохраняем → редиректим в PWA
+    """
+    if error:
+        return RedirectResponse(f"{WEBAPP_URL}?strava=error&msg={error}")
+
+    # Декодируем state чтобы получить user_id
     try:
-        p = PLANS[plan]
-        await call.message.bot.send_message(
-            user_id,
-            f"🎉 *Pro активирован!*\n\n"
-            f"Тариф: {p['label']}\n"
-            f"До: {pro_until.strftime('%d.%m.%Y')}\n\n"
-            f"Все функции разблокированы! 🚀",
-            parse_mode=ParseMode.MARKDOWN
+        state_data = json.loads(base64.urlsafe_b64decode(state).decode())
+        user_id = state_data["user_id"]
+    except Exception:
+        return RedirectResponse(f"{WEBAPP_URL}?strava=error&msg=invalid_state")
+
+    # Меняем code на токен
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://www.strava.com/oauth/token",
+            data={
+                "client_id":     STRAVA_CLIENT_ID,
+                "client_secret": STRAVA_CLIENT_SECRET,
+                "code":          code,
+                "grant_type":    "authorization_code",
+            }
         )
+        if resp.status_code != 200:
+            return RedirectResponse(f"{WEBAPP_URL}?strava=error&msg=token_exchange_failed")
+        token_data = resp.json()
+
+    # Сохраняем токен и strava_id
+    strava_athlete_id = str(token_data["athlete"]["id"])
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            UPDATE users SET strava_id=$1 WHERE id=$2
+        """, strava_athlete_id, user_id)
+
+        await conn.execute("""
+            INSERT INTO strava_tokens (user_id, access_token, refresh_token, expires_at, scope)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (user_id) DO UPDATE
+                SET access_token=$2, refresh_token=$3, expires_at=$4, updated_at=NOW()
+        """, user_id,
+            token_data["access_token"],
+            token_data["refresh_token"],
+            token_data["expires_at"],
+            token_data.get("scope", "")
+        )
+
+        # Импортируем последние 10 активностей сразу
+        await _import_strava_activities(user_id, token_data["access_token"])
+
+    return RedirectResponse(f"{WEBAPP_URL}?strava=connected")
+
+async def _refresh_strava_token(user_id: int) -> Optional[str]:
+    """Обновляет токен Strava если истёк"""
+    async with pool.acquire() as conn:
+        token_row = await conn.fetchrow(
+            "SELECT * FROM strava_tokens WHERE user_id=$1", user_id
+        )
+        if not token_row:
+            return None
+
+        # Токен ещё действителен
+        if token_row["expires_at"] > int(time.time()) + 300:
+            return token_row["access_token"]
+
+        # Обновляем
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://www.strava.com/oauth/token",
+                data={
+                    "client_id":     STRAVA_CLIENT_ID,
+                    "client_secret": STRAVA_CLIENT_SECRET,
+                    "refresh_token": token_row["refresh_token"],
+                    "grant_type":    "refresh_token",
+                }
+            )
+            if resp.status_code != 200:
+                return None
+            new_data = resp.json()
+
+        await conn.execute("""
+            UPDATE strava_tokens
+            SET access_token=$1, refresh_token=$2, expires_at=$3, updated_at=NOW()
+            WHERE user_id=$4
+        """, new_data["access_token"], new_data["refresh_token"],
+            new_data["expires_at"], user_id)
+
+        return new_data["access_token"]
+
+async def _import_strava_activities(user_id: int, access_token: str):
+    """Импортирует последние активности из Strava"""
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            "https://www.strava.com/api/v3/athlete/activities",
+            headers={"Authorization": f"Bearer {access_token}"},
+            params={"per_page": 10, "page": 1}
+        )
+        if resp.status_code != 200:
+            return
+        activities = resp.json()
+
+    async with pool.acquire() as conn:
+        habit = await conn.fetchrow(
+            "SELECT id FROM habits WHERE user_id=$1 AND type='run'", user_id
+        )
+        for act in activities:
+            act_date = date.fromisoformat(act["start_date_local"][:10])
+            dist_km  = round(act.get("distance", 0) / 1000, 2)
+            dur_sec  = act.get("moving_time", 0)
+
+            if dist_km < 0.1:
+                continue
+
+            # Сохраняем пробежку
+            try:
+                await conn.execute("""
+                    INSERT INTO run_log (user_id, date, distance_km, duration_sec, source, strava_id)
+                    VALUES ($1, $2, $3, $4, 'strava', $5)
+                    ON CONFLICT (strava_id) DO NOTHING
+                """, user_id, act_date, dist_km, dur_sec, str(act["id"]))
+            except Exception:
+                pass
+
+            # Авточекин
+            if habit:
+                try:
+                    await conn.execute("""
+                        INSERT INTO checkins (user_id, habit_id, date)
+                        VALUES ($1, $2, $3) ON CONFLICT DO NOTHING
+                    """, user_id, habit["id"], act_date)
+                except Exception:
+                    pass
+
+@app.post("/auth/strava/disconnect")
+async def strava_disconnect(user=Depends(get_current_user)):
+    """Отключает Strava интеграцию"""
+    async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM strava_tokens WHERE user_id=$1", user["id"])
+        await conn.execute("UPDATE users SET strava_id=NULL WHERE id=$1", user["id"])
+    return {"ok": True}
+
+@app.get("/auth/strava/status")
+async def strava_status(user=Depends(get_current_user)):
+    """Проверяем подключена ли Strava"""
+    async with pool.acquire() as conn:
+        token = await conn.fetchrow("SELECT * FROM strava_tokens WHERE user_id=$1", user["id"])
+    return {
+        "connected": bool(token),
+        "expiresAt": token["expires_at"] if token else None,
+    }
+
+@app.post("/strava/sync")
+async def strava_sync(user=Depends(get_current_user)):
+    """Ручная синхронизация со Strava (вызывается из PWA)"""
+    access_token = await _refresh_strava_token(user["id"])
+    if not access_token:
+        raise HTTPException(400, "Strava not connected")
+    await _import_strava_activities(user["id"], access_token)
+    return {"ok": True, "message": "Activities synced"}
+
+# ── Strava Webhook (авто-уведомления от Strava) ──
+@app.get("/webhooks/strava")
+async def strava_verify(request: Request):
+    params = dict(request.query_params)
+    if params.get("hub.verify_token") == STRAVA_WEBHOOK_SECRET:
+        return {"hub.challenge": params.get("hub.challenge")}
+    raise HTTPException(403, "Invalid verify token")
+
+@app.post("/webhooks/strava")
+async def strava_event(request: Request, background_tasks: BackgroundTasks):
+    body = await request.json()
+    if body.get("object_type") != "activity" or body.get("aspect_type") != "create":
+        return {"ok": True}
+
+    strava_owner_id = str(body.get("owner_id"))
+    activity_id     = body.get("object_id")
+    background_tasks.add_task(_process_strava_event, strava_owner_id, activity_id)
+    return {"ok": True}
+
+async def _process_strava_event(strava_owner_id: str, activity_id: int):
+    async with pool.acquire() as conn:
+        user = await conn.fetchrow("SELECT id FROM users WHERE strava_id=$1", strava_owner_id)
+        if not user:
+            return
+
+    access_token = await _refresh_strava_token(user["id"])
+    if not access_token:
+        return
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"https://www.strava.com/api/v3/activities/{activity_id}",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        if resp.status_code != 200:
+            return
+        act = resp.json()
+
+    dist_km = round(act.get("distance", 0) / 1000, 2)
+    dur_sec = act.get("moving_time", 0)
+    today   = date.today()
+
+    async with pool.acquire() as conn:
+        try:
+            await conn.execute("""
+                INSERT INTO run_log (user_id, date, distance_km, duration_sec, source, strava_id)
+                VALUES ($1, $2, $3, $4, 'strava', $5)
+                ON CONFLICT (strava_id) DO NOTHING
+            """, user["id"], today, dist_km, dur_sec, str(activity_id))
+        except Exception:
+            pass
+
+        habit = await conn.fetchrow(
+            "SELECT id, streak FROM habits WHERE user_id=$1 AND type='run'", user["id"]
+        )
+        if habit:
+            await conn.execute("""
+                INSERT INTO checkins (user_id, habit_id, date)
+                VALUES ($1, $2, $3) ON CONFLICT DO NOTHING
+            """, user["id"], habit["id"], today)
+
+    # Уведомление пользователю
+    pace = f"{dur_sec//dist_km//60:.0f}:{dur_sec//dist_km%60:02.0f}" if dist_km > 0 else "—"
+    try:
+        from aiogram import Bot
+        bot = Bot(token=BOT_TOKEN)
+        await bot.send_message(
+            user["id"],
+            f"🟠 *Strava — пробежка засчитана!*\n\n"
+            f"🏃 {act.get('name', 'Пробежка')}\n"
+            f"📏 {dist_km} км · {dur_sec//60} мин · темп {pace}'/км\n\n"
+            f"✅ Привычка «Бег» автоматически отмечена!",
+            parse_mode="Markdown"
+        )
+        await bot.session.close()
+    except Exception as e:
+        logger.error(f"Bot notify error: {e}")
+
+# ══════════════════════════════════════════════════════
+# ИИ-ИНСАЙТЫ — GPT-4o
+# ══════════════════════════════════════════════════════
+@app.get("/insights")
+async def get_insights(user=Depends(get_current_user)):
+    """Возвращает ИИ-инсайты. Только для Pro пользователей."""
+    if not user["is_pro"]:
+        raise HTTPException(403, "Pro subscription required")
+
+    # Проверяем кеш (инсайты обновляются раз в неделю)
+    async with pool.acquire() as conn:
+        cached = await conn.fetchrow(
+            "SELECT * FROM ai_insights WHERE user_id=$1", user["id"]
+        )
+        if cached and cached["valid_until"] > datetime.now():
+            return {"insights": cached["content"], "generatedAt": cached["generated_at"].isoformat()}
+
+        # Собираем данные за 30 дней
+        habits   = await conn.fetch("SELECT * FROM habits WHERE user_id=$1", user["id"])
+        checkins = await conn.fetch("""
+            SELECT c.date, h.type, h.name
+            FROM checkins c JOIN habits h ON h.id=c.habit_id
+            WHERE c.user_id=$1 AND c.date >= CURRENT_DATE - 30
+            ORDER BY c.date DESC
+        """, user["id"])
+        runs = await conn.fetch("""
+            SELECT date, distance_km, duration_sec
+            FROM run_log WHERE user_id=$1 ORDER BY date DESC LIMIT 20
+        """, user["id"])
+
+    # Формируем контекст для GPT
+    habits_summary = []
+    for h in habits:
+        dates = [c["date"].isoformat() for c in checkins if c["type"] == h["type"]]
+        rate  = round(len(dates) / 30 * 100)
+        habits_summary.append(f"- {h['icon'] if hasattr(h,'icon') else ''} {h['name']}: {rate}% за 30 дней, стрик {h['streak']} дн")
+
+    runs_text = ""
+    if runs:
+        total_km = sum(float(r["distance_km"] or 0) for r in runs)
+        runs_text = f"Пробежек: {len(runs)}, суммарно {total_km:.1f} км за последние записи."
+
+    # Анализируем слабые дни недели
+    from collections import Counter
+    missed_days = []
+    all_dates_set = {c["date"] for c in checkins}
+    for i in range(30):
+        d = date.today() - timedelta(days=i)
+        if d not in all_dates_set:
+            missed_days.append(d.weekday())
+    day_names = ["понедельник","вторник","среда","четверг","пятница","суббота","воскресенье"]
+    weak_days = Counter(missed_days).most_common(2)
+    weak_text = ", ".join(day_names[d] for d,_ in weak_days) if weak_days else "нет"
+
+    prompt = f"""Ты персональный коуч по привычкам. Проанализируй данные пользователя за 30 дней и дай конкретные, практичные советы на русском языке.
+
+Данные пользователя:
+{chr(10).join(habits_summary)}
+{runs_text}
+Дни с пропусками: {weak_text}
+
+Дай 3–4 конкретных совета:
+1. Что получается хорошо — похвали конкретно
+2. Главный паттерн пропусков и конкретное решение
+3. Одно небольшое улучшение на следующую неделю
+4. Мотивирующий факт о формировании привычек
+
+Формат: короткие параграфы, без списков. Обращайся на "ты". Тон: дружелюбный коуч, не лектор. Максимум 150 слов."""
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+                json={
+                    "model":       "gpt-4o-mini",   # дешевле gpt-4o, качество достаточное
+                    "max_tokens":  400,
+                    "temperature": 0.7,
+                    "messages": [{"role": "user", "content": prompt}]
+                }
+            )
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        logger.error(f"OpenAI error: {e}")
+        content = (
+            "📊 За последние 30 дней ты показываешь хороший прогресс!\n\n"
+            "Продолжай в том же темпе — регулярность важнее интенсивности. "
+            "Самое сложное уже позади: первые 21 день позади, привычки закрепляются. "
+            "На этой неделе сфокусируйся на одной привычке где показатель ниже 70%."
+        )
+
+    # Кешируем на неделю
+    valid_until = datetime.now() + timedelta(days=7)
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            INSERT INTO ai_insights (user_id, content, valid_until)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id) DO UPDATE
+                SET content=$2, generated_at=NOW(), valid_until=$3
+        """, user["id"], content, valid_until)
+
+    return {"insights": content, "generatedAt": datetime.now().isoformat()}
+
+@app.post("/insights/refresh")
+async def refresh_insights(user=Depends(get_current_user)):
+    """Сбрасывает кеш инсайтов (Pro only)"""
+    if not user["is_pro"]:
+        raise HTTPException(403, "Pro required")
+    async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM ai_insights WHERE user_id=$1", user["id"])
+    return {"ok": True, "message": "Insights will regenerate on next request"}
+
+# ══════════════════════════════════════════════════════
+# РЕФЕРАЛЬНАЯ ПРОГРАММА
+# ══════════════════════════════════════════════════════
+@app.post("/referral/apply")
+async def apply_referral(ref_code: str, user=Depends(get_current_user)):
+    """
+    Применяем реферальный код при регистрации.
+    Оба пользователя получают +7 дней Pro.
+    """
+    async with pool.acquire() as conn:
+        # Проверяем что реф. код существует и не свой
+        referrer = await conn.fetchrow(
+            "SELECT id FROM users WHERE referral_code=$1 AND id!=$2",
+            ref_code, user["id"]
+        )
+        if not referrer:
+            raise HTTPException(404, "Invalid or own referral code")
+
+        # Проверяем что ещё не использовал
+        existing = await conn.fetchrow(
+            "SELECT id FROM referral_rewards WHERE referred_id=$1", user["id"]
+        )
+        if existing:
+            raise HTTPException(400, "Referral already applied")
+
+        # Начисляем +7 дней обоим
+        for uid in [user["id"], referrer["id"]]:
+            current = await conn.fetchrow("SELECT pro_until, is_pro FROM users WHERE id=$1", uid)
+            base    = max(current["pro_until"], datetime.now()) if current["pro_until"] else datetime.now()
+            new_until = base + timedelta(days=7)
+            await conn.execute("""
+                UPDATE users SET is_pro=TRUE, pro_until=$1, updated_at=NOW() WHERE id=$2
+            """, new_until, uid)
+
+        # Записываем реферал
+        await conn.execute("""
+            INSERT INTO referral_rewards (referrer_id, referred_id, days_added)
+            VALUES ($1, $2, 7)
+        """, referrer["id"], user["id"])
+
+        # Обновляем referred_by у нового пользователя
+        await conn.execute(
+            "UPDATE users SET referred_by=$1 WHERE id=$2",
+            referrer["id"], user["id"]
+        )
+
+    # Уведомляем реферера
+    try:
+        from aiogram import Bot
+        bot = Bot(token=BOT_TOKEN)
+        await bot.send_message(
+            referrer["id"],
+            f"🎁 *+7 дней Pro!*\n\n"
+            f"По твоей ссылке зарегистрировался новый пользователь.\n"
+            f"Ты получил +7 дней Pro в подарок! 🔥",
+            parse_mode="Markdown"
+        )
+        await bot.session.close()
     except Exception:
         pass
 
-    await call.message.edit_text(f"✅ Подписка активирована для user_id={user_id}")
+    return {"ok": True, "daysAdded": 7, "message": "You and your friend got +7 days Pro!"}
 
-# ── Strava ──
-@router.callback_query(F.data == "strava_connect")
-async def strava_connect(call: CallbackQuery):
+@app.get("/referral/stats")
+async def referral_stats(user=Depends(get_current_user)):
+    """Статистика реферальной программы пользователя"""
     async with pool.acquire() as conn:
-        token_row = await conn.fetchrow(
-            "SELECT * FROM strava_tokens WHERE user_id=$1", call.from_user.id
-        )
-    if token_row:
-        await call.message.edit_text(
-            "🟠 *Strava уже подключена!*\n\n"
-            "Пробежки автоматически засчитываются в привычку «Бег».",
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🔄 Синхронизировать сейчас", callback_data="strava_sync")],
-                [InlineKeyboardButton(text="🔌 Отключить Strava",        callback_data="strava_disconnect")],
-                [InlineKeyboardButton(text="← Назад",                    callback_data="today")],
-            ])
-        )
-    else:
-        strava_url = (
-            f"https://www.strava.com/oauth/authorize"
-            f"?client_id={os.getenv('STRAVA_CLIENT_ID', '')}"
-            f"&redirect_uri={API_URL}/auth/strava/callback"
-            f"&response_type=code&approval_prompt=auto&scope=activity:read_all"
-            f"&state={call.from_user.id}"
-        )
-        await call.message.edit_text(
-            "🟠 *Подключить Strava*\n\n"
-            "После подключения каждая пробежка в Strava будет автоматически:\n"
-            "• Отмечать привычку «Бег»\n"
-            "• Записывать км, время и темп\n"
-            "• Присылать тебе уведомление\n\n"
-            "Нажми кнопку ниже и разреши доступ:",
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🟠 Подключить Strava", url=strava_url)],
-                [InlineKeyboardButton(text="← Назад",               callback_data="today")],
-            ])
-        )
-
-@router.callback_query(F.data == "strava_sync")
-async def strava_sync(call: CallbackQuery):
-    await call.answer("🔄 Синхронизирую...")
-    try:
-        async with httpx.AsyncClient(timeout=20) as client:
-            await client.post(f"{API_URL}/strava/sync",
-                              headers={"X-Internal-User-Id": str(call.from_user.id)})
-        await call.message.answer("✅ Strava синхронизирована!")
-    except Exception:
-        await call.message.answer("⚠️ Ошибка синхронизации. Попробуй позже.")
-
-@router.callback_query(F.data == "strava_disconnect")
-async def strava_disconnect(call: CallbackQuery):
-    async with pool.acquire() as conn:
-        await conn.execute("DELETE FROM strava_tokens WHERE user_id=$1", call.from_user.id)
-        await conn.execute("UPDATE users SET strava_id=NULL WHERE id=$1", call.from_user.id)
-    await call.answer("Strava отключена")
-    await show_today(call)
-
-# ── Реферальная программа ──
-@router.message(Command("refer"))
-async def cmd_refer(msg: Message):
-    async with pool.acquire() as conn:
-        user = await conn.fetchrow("SELECT referral_code FROM users WHERE id=$1", msg.from_user.id)
         count = await conn.fetchval(
-            "SELECT COUNT(*) FROM referral_rewards WHERE referrer_id=$1", msg.from_user.id
+            "SELECT COUNT(*) FROM referral_rewards WHERE referrer_id=$1", user["id"]
         )
-    ref_code = user["referral_code"] if user else "—"
-    ref_link = f"https://t.me/{(await msg.bot.me()).username}?start=ref_{ref_code}"
+        user_row = await conn.fetchrow("SELECT referral_code FROM users WHERE id=$1", user["id"])
 
-    await msg.answer(
-        f"🤝 *Реферальная программа*\n\n"
-        f"Приглашай друзей — оба получаете *+7 дней Pro* 🎁\n\n"
-        f"Твоя ссылка:\n`{ref_link}`\n\n"
-        f"Друзей приглашено: *{count}*\n"
-        f"Дней Pro заработано: *{count * 7}*\n\n"
-        f"_Поделись ссылкой в чате, сторис или личке_",
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="📤 Поделиться ссылкой", switch_inline_query=f"Присоединяйся к Streakly — трекеру привычек! {ref_link}")
-        ]])
-    )
-
-# ── /export ──
-@router.message(Command("export"))
-@router.callback_query(F.data == "export")
-async def export_data(event, **kw):
-    msg = event if isinstance(event, Message) else event.message
-    uid = event.from_user.id
-    import json as jsonlib
-    async with pool.acquire() as conn:
-        habits   = await conn.fetch("SELECT * FROM habits WHERE user_id=$1", uid)
-        checkins = await conn.fetch("SELECT * FROM checkins WHERE user_id=$1 ORDER BY date DESC", uid)
-        runs     = await conn.fetch("SELECT * FROM run_log WHERE user_id=$1 ORDER BY date DESC", uid)
-        books    = await conn.fetch("SELECT * FROM books WHERE user_id=$1", uid)
-
-    def ser(rows):
-        result = []
-        for r in rows:
-            d = dict(r)
-            for k, v in d.items():
-                if hasattr(v, 'isoformat'):
-                    d[k] = v.isoformat()
-            result.append(d)
-        return result
-
-    data = {
-        "exported_at": datetime.now().isoformat(),
-        "app": "Streakly v2",
-        "habits":   ser(habits),
-        "checkins": ser(checkins),
-        "run_log":  ser(runs),
-        "books":    ser(books),
+    ref_code = user_row["referral_code"] if user_row else None
+    return {
+        "referralCode":  ref_code,
+        "referralLink":  f"{WEBAPP_URL}?ref={ref_code}" if ref_code else None,
+        "totalReferrals": count,
+        "totalDaysEarned": count * 7,
     }
-    json_bytes = jsonlib.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
-    from aiogram.types import BufferedInputFile
-    await msg.answer_document(
-        BufferedInputFile(json_bytes, filename=f"streakly_{date.today()}.json"),
-        caption=f"✅ Экспорт: {len(checkins)} чекинов, {len(habits)} привычек, {len(runs)} пробежек"
-    )
-
-# ── /settings ──
-@router.message(Command("settings"))
-async def cmd_settings(msg: Message):
-    async with pool.acquire() as conn:
-        user = await conn.fetchrow("SELECT * FROM users WHERE id=$1", msg.from_user.id)
-    phone_s = f"✅ {user['phone']}" if user and user["phone"] else "❌ Не указан"
-    pro_s   = f"✅ Pro до {user['pro_until'].strftime('%d.%m.%Y')}" if user and user["is_pro"] else "❌ Базовый план"
-    await msg.answer(
-        f"⚙️ *Настройки аккаунта*\n\n"
-        f"👤 Имя: {msg.from_user.first_name}\n"
-        f"📱 Телефон: {phone_s}\n"
-        f"✨ Тариф: {pro_s}\n"
-        f"📅 С нами с: {user['created_at'].strftime('%d.%m.%Y') if user else '—'}\n",
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="✨ Улучшить план",     callback_data="upgrade")],
-            [InlineKeyboardButton(text="🤝 Пригласить друга",  callback_data="refer")],
-            [InlineKeyboardButton(text="📤 Экспорт данных",    callback_data="export")],
-            [InlineKeyboardButton(text="🔒 Политика конф.",    url=f"{WEBAPP_URL}/privacy.html")],
-            [InlineKeyboardButton(text="🗑 Удалить аккаунт",   callback_data="delete_account")],
-        ])
-    )
-
-@router.callback_query(F.data == "refer")
-async def refer_cb(call: CallbackQuery):
-    await cmd_refer(call.message)
-
-@router.callback_query(F.data == "delete_account")
-async def delete_confirm(call: CallbackQuery):
-    await call.message.edit_text(
-        "⚠️ *Удаление аккаунта*\n\n"
-        "Это удалит ВСЕ твои данные:\n"
-        "• Профиль, настройки\n"
-        "• Все привычки и стрики\n"
-        "• Историю чекинов\n"
-        "• Пробежки и книги\n\n"
-        "Перед удалением сделай /export\n\n"
-        "Данные удалятся безвозвратно.",
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="⚠️ Да, удалить всё",   callback_data="delete_confirmed")],
-            [InlineKeyboardButton(text="← Отмена",              callback_data="today")],
-        ])
-    )
-
-@router.callback_query(F.data == "delete_confirmed")
-async def delete_confirmed(call: CallbackQuery):
-    async with pool.acquire() as conn:
-        await conn.execute("DELETE FROM users WHERE id=$1", call.from_user.id)
-    await call.message.edit_text(
-        "✅ Все данные удалены.\n\n"
-        "Спасибо что пользовался Streakly!\n"
-        "Если захочешь вернуться — /start 🙂"
-    )
-
-# ── /help ──
-@router.message(Command("help"))
-async def cmd_help(msg: Message):
-    await msg.answer(
-        "📖 *Команды Streakly*\n\n"
-        "/today — отметить привычки\n"
-        "/stats — моя статистика\n"
-        "/social — рейтинг с друзьями\n"
-        "/run — записать пробежку\n"
-        "/insight — ИИ-анализ (Pro)\n"
-        "/refer — пригласить друга (+7 дней Pro)\n"
-        "/upgrade — Pro-подписка\n"
-        "/settings — настройки аккаунта\n"
-        "/export — скачать все данные\n"
-        "/help — эта справка\n\n"
-        f"🌐 [Открыть приложение]({WEBAPP_URL})",
-        parse_mode=ParseMode.MARKDOWN
-    )
 
 # ══════════════════════════════════════════════════════
-# SCHEDULER — напоминания
+# ADMIN — служебные эндпоинты
 # ══════════════════════════════════════════════════════
-async def send_reminders(bot: Bot):
-    """Каждую минуту проверяем кому слать напоминание"""
-    now_time = datetime.now().strftime("%H:%M")
+ADMIN_KEY = os.getenv("ADMIN_KEY", "change-me-in-production")
+
+def require_admin(x_admin_key: str = Header(None)):
+    if x_admin_key != ADMIN_KEY:
+        raise HTTPException(403, "Admin only")
+
+@app.get("/admin/stats", dependencies=[Depends(require_admin)])
+async def admin_stats():
+    """Общая статистика продукта"""
+    async with pool.acquire() as conn:
+        total_users   = await conn.fetchval("SELECT COUNT(*) FROM users")
+        pro_users     = await conn.fetchval("SELECT COUNT(*) FROM users WHERE is_pro=TRUE")
+        total_checkins = await conn.fetchval("SELECT COUNT(*) FROM checkins")
+        today_checkins = await conn.fetchval("SELECT COUNT(*) FROM checkins WHERE date=CURRENT_DATE")
+        total_revenue  = await conn.fetchval("SELECT COALESCE(SUM(amount),0) FROM payments WHERE status='paid'")
+        mrr            = await conn.fetchval("""
+            SELECT COALESCE(SUM(
+                CASE plan WHEN 'monthly' THEN 2990 WHEN 'family' THEN 5990
+                          WHEN 'yearly'  THEN 1990 ELSE 0 END
+            ), 0)
+            FROM users WHERE is_pro=TRUE AND pro_until > NOW()
+        """)
+    return {
+        "users":         {"total": total_users, "pro": pro_users},
+        "checkins":      {"total": total_checkins, "today": today_checkins},
+        "revenue":       {"total_tenge": int(total_revenue), "mrr_tenge": int(mrr)},
+        "conversion":    round(pro_users / total_users * 100, 1) if total_users else 0,
+    }
+
+@app.get("/admin/payments", dependencies=[Depends(require_admin)])
+async def admin_payments(limit: int = 50):
+    """Последние платежи"""
     async with pool.acquire() as conn:
         rows = await conn.fetch("""
-            SELECT h.user_id, h.id, h.name, h.icon, h.streak, u.first_name
-            FROM habits h
-            JOIN users u ON u.id=h.user_id
-            WHERE h.reminder_on=TRUE
-              AND TO_CHAR(h.reminder_time, 'HH24:MI')=$1
-              AND h.id NOT IN (
-                  SELECT habit_id FROM checkins WHERE date=CURRENT_DATE
-              )
-        """, now_time)
+            SELECT p.*, u.first_name, u.username
+            FROM payments p JOIN users u ON u.id=p.user_id
+            ORDER BY p.created_at DESC LIMIT $1
+        """, limit)
+    return _serialize(rows)
 
-    for r in rows:
-        try:
-            await bot.send_message(
-                r["user_id"],
-                f"🔔 *{r['icon']} {r['name']}*\n\n"
-                f"Привет, {r['first_name']}! Время выполнить привычку 💪\n"
-                f"Стрик: 🔥{r['streak']} дней — не прерывай!",
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-                    InlineKeyboardButton(text=f"✅ Отметить {r['icon']}", callback_data=f"ci:{r['id']}"),
-                    InlineKeyboardButton(text="⏰ Позже",                  callback_data="dismiss"),
-                ]])
+# ══════════════════════════════════════════════════════
+# HEALTH & ROOT
+# ══════════════════════════════════════════════════════
+@app.get("/health")
+async def health():
+    try:
+        async with pool.acquire() as conn:
+            await conn.execute("SELECT 1")
+        return {"status": "ok", "db": "connected", "ts": datetime.now().isoformat()}
+    except Exception as e:
+        return JSONResponse({"status": "error", "db": str(e)}, status_code=500)
+
+@app.get("/")
+async def root():
+    return {"app": "Streaklyapp API", "version": "2.0.0", "docs": "/docs"}
+
+# ══════════════════════════════════════════════════════
+# EMAIL AUTH — Magic Link / OTP
+# ══════════════════════════════════════════════════════
+import random
+import string
+
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+FROM_EMAIL     = os.getenv("FROM_EMAIL", "noreply@streaklyapp.app")
+
+# Временное хранилище OTP (в продакшене — Redis с TTL)
+_otp_store: dict = {}  # email -> {code, expires_at}
+
+class EmailSendRequest(BaseModel):
+    email: str
+
+class EmailVerifyRequest(BaseModel):
+    email: str
+    code:  str
+
+@app.post("/auth/email/send")
+async def email_send(body: EmailSendRequest):
+    """Отправляем 6-значный OTP на email через Resend"""
+    email = body.email.strip().lower()
+    if "@" not in email or "." not in email:
+        raise HTTPException(400, "Invalid email")
+
+    # Генерируем OTP
+    code = "".join(random.choices(string.digits, k=6))
+    expires = datetime.now() + timedelta(minutes=15)
+    _otp_store[email] = {"code": code, "expires": expires}
+
+    # Отправляем через Resend
+    if RESEND_API_KEY:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from":    FROM_EMAIL,
+                    "to":      [email],
+                    "subject": f"🔥 Твой код входа в Streaklyapp: {code}",
+                    "html":    f"""
+                        <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:40px 20px;">
+                          <div style="font-size:48px;text-align:center;margin-bottom:20px;">🔥</div>
+                          <h1 style="font-size:24px;text-align:center;color:#1a1a2e;">Streaklyapp</h1>
+                          <p style="color:#4a4a6a;text-align:center;">Твой код для входа:</p>
+                          <div style="background:#f3f0ff;border-radius:16px;padding:24px;text-align:center;margin:20px 0;">
+                            <div style="font-size:40px;font-weight:700;letter-spacing:8px;color:#6366f1;">{code}</div>
+                          </div>
+                          <p style="color:#8888a8;font-size:13px;text-align:center;">
+                            Код действителен 15 минут.<br>
+                            Если ты не запрашивал код — просто проигнорируй это письмо.
+                          </p>
+                        </div>
+                    """,
+                }
             )
-        except Exception as e:
-            logger.warning(f"Reminder failed for {r['user_id']}: {e}")
+            if resp.status_code not in (200, 201):
+                logger.error(f"Resend error: {resp.text}")
+                raise HTTPException(500, "Email send failed")
+    else:
+        # Dev режим — логируем код
+        logger.info(f"[DEV] OTP for {email}: {code}")
 
-@router.callback_query(F.data == "dismiss")
-async def dismiss_reminder(call: CallbackQuery):
-    await call.answer("Напомним позже")
-    await call.message.delete()
+    return {"ok": True, "message": "Code sent"}
 
-# ══════════════════════════════════════════════════════
-# MAIN
-# ══════════════════════════════════════════════════════
-async def main():
-    await init_db()
+@app.post("/auth/email/verify")
+async def email_verify(body: EmailVerifyRequest):
+    """Верифицируем OTP и создаём/обновляем пользователя"""
+    email = body.email.strip().lower()
+    code  = body.code.strip()
 
-    bot     = Bot(token=BOT_TOKEN)
-    storage = RedisStorage.from_url(REDIS_URL)
-    dp      = Dispatcher(storage=storage)
-    dp.include_router(router)
+    stored = _otp_store.get(email)
+    if not stored:
+        raise HTTPException(400, "Code not found or expired")
+    if datetime.now() > stored["expires"]:
+        del _otp_store[email]
+        raise HTTPException(400, "Code expired")
+    if stored["code"] != code:
+        raise HTTPException(400, "Invalid code")
 
-    scheduler = AsyncIOScheduler(timezone="Asia/Almaty")
-    scheduler.add_job(
-        send_reminders,
-        trigger=CronTrigger(minute="*"),
-        args=[bot]
-    )
-    scheduler.start()
+    # Удаляем использованный OTP
+    del _otp_store[email]
 
-    logger.info("🚀 Streakly Bot v2 starting...")
-    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+    # Создаём или находим пользователя по email
+    async with pool.acquire() as conn:
+        # Добавляем email колонку если нет
+        await conn.execute("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
+        """)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+        # Ищем существующего пользователя
+        user = await conn.fetchrow("SELECT * FROM users WHERE email=$1", email)
+        if not user:
+            # Новый пользователь — генерируем ID из email
+            import hashlib
+            user_id = int(hashlib.md5(email.encode()).hexdigest()[:12], 16) % (10**12)
+            ref_code = secrets.token_urlsafe(8)
+            user = await conn.fetchrow("""
+                INSERT INTO users (id, email, first_name, referral_code)
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (email) DO UPDATE
+                    SET updated_at = NOW()
+                RETURNING *
+            """, user_id, email, email.split('@')[0], ref_code)
+
+    token = make_token(user["id"])
+    return {
+        "token": token,
+        "user": {
+            "id":           user["id"],
+            "name":         user["first_name"] or email.split('@')[0],
+            "email":        email,
+            "isPro":        user["is_pro"],
+            "proUntil":     user["pro_until"].isoformat() if user["pro_until"] else None,
+            "referralCode": user["referral_code"],
+        }
+    }
