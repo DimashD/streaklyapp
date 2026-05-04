@@ -352,7 +352,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
 <div id="auth-screen">
   <div class="auth-logo">🔥</div>
   <div class="auth-title clash">Добро пожаловать в Streaklyapp</div>
-  <div class="auth-sub">Трекер привычек с ИИ-инсайтами, соревнованиями с друзьями и интеграцией со Strava</div>
+  <div class="auth-sub">Трекер привычек который помогает выработать полезные привычки за 21 день</div>
 
   <button class="tg-btn" onclick="loginTelegram()">
     <span class="tg-btn-icon">✈️</span>
@@ -450,16 +450,16 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
     <p class="ob-p">Попробуй все возможности без ограничений. После — 2 990 ₸/мес или базовый план навсегда бесплатно.</p>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
       <div style="display:flex;align-items:center;gap:11px;padding:13px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--line);">
-        <span style="font-size:21px;">🔗</span>
-        <div><div style="font-size:14px;font-weight:600;color:var(--ink);">Интеграция со Strava</div><div style="font-size:12px;color:var(--ink3);">Авточекин при пробежке</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:11px;padding:13px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--line);">
         <span style="font-size:21px;">🤖</span>
-        <div><div style="font-size:14px;font-weight:600;color:var(--ink);">ИИ-инсайты каждую неделю</div><div style="font-size:12px;color:var(--ink3);">Персональный анализ паттернов</div></div>
+        <div><div style="font-size:14px;font-weight:600;color:var(--ink);">ИИ-инсайты каждую неделю</div><div style="font-size:12px;color:var(--ink3);">Персональный анализ твоих паттернов</div></div>
       </div>
       <div style="display:flex;align-items:center;gap:11px;padding:13px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--line);">
         <span style="font-size:21px;">⚔️</span>
-        <div><div style="font-size:14px;font-weight:600;color:var(--ink);">Соревнования с друзьями</div><div style="font-size:12px;color:var(--ink3);">По каждой привычке отдельно</div></div>
+        <div><div style="font-size:14px;font-weight:600;color:var(--ink);">Соревнования с друзьями</div><div style="font-size:12px;color:var(--ink3);">Рейтинг по каждой привычке отдельно</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:13px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--line);">
+        <span style="font-size:21px;">🔔</span>
+        <div><div style="font-size:14px;font-weight:600;color:var(--ink);">Умные напоминания</div><div style="font-size:12px;color:var(--ink3);">Своё время для каждой привычки</div></div>
       </div>
     </div>
     <div class="spacer"></div>
@@ -551,7 +551,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
     <div style="padding:20px 14px 0;">
       <div class="prof-av" id="prof-av">👤</div>
       <div class="prof-name clash" id="prof-name">Гость</div>
-      <div class="prof-sub" id="prof-sub">Присоединяйся через Telegram для синхронизации</div>
+      <div class="prof-sub" id="prof-sub">Войди через Telegram чтобы сохранить данные</div>
     </div>
     <div class="prof-stats">
       <div class="ps"><div class="ps-v clash" id="p-streak">0🔥</div><div class="ps-l">Стрик</div></div>
@@ -559,8 +559,13 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
       <div class="ps"><div class="ps-v clash" id="p-total">0</div><div class="ps-l">Привычек</div></div>
     </div>
 
-    <!-- Pro banner -->
-    <div style="margin:0 14px 14px;background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(168,85,247,.1));border:1px solid rgba(139,92,246,.3);border-radius:var(--rc);padding:16px;cursor:pointer;display:flex;align-items:center;gap:12px;" onclick="openPaywall()">
+    <!-- Guest CTA / Pro banner -->
+    <div id="guest-cta" style="margin:0 14px 14px;background:linear-gradient(135deg,rgba(34,158,217,.2),rgba(34,158,217,.1));border:1px solid rgba(34,158,217,.3);border-radius:var(--rc);padding:16px;cursor:pointer;display:flex;align-items:center;gap:12px;" onclick="loginTelegram()">
+      <span style="font-size:26px;">✈️</span>
+      <div style="flex:1;"><div style="font-weight:700;color:var(--ink);font-size:15px;">Войти через Telegram</div><div style="font-size:12px;color:#93c5fd;">Сохраняй данные и синхронизируй устройства</div></div>
+      <span style="color:#93c5fd;font-size:18px;">›</span>
+    </div>
+    <div id="pro-banner" style="display:none;margin:0 14px 14px;background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(168,85,247,.1));border:1px solid rgba(139,92,246,.3);border-radius:var(--rc);padding:16px;cursor:pointer;display:flex;align-items:center;gap:12px;" onclick="openPaywall()">
       <span style="font-size:26px;">✨</span>
       <div style="flex:1;"><div style="font-weight:700;color:var(--ink);font-size:15px;">Streaklyapp Pro</div><div style="font-size:12px;color:var(--v3);">7 дней бесплатно · потом 2 990 ₸/мес</div></div>
       <span style="color:var(--v2);font-size:18px;">›</span>
@@ -587,11 +592,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
       <div class="mi-label">Подключить Telegram</div>
       <div class="mi-right">›</div>
     </div>
-    <div class="menu-item" onclick="connectStrava()">
-      <div class="mi-icon" style="background:rgba(249,115,22,.1);">🟠</div>
-      <div class="mi-label" id="strava-menu-label">Подключить Strava</div>
-      <div class="mi-right" id="strava-menu-right">›</div>
-    </div>
+
     <div class="menu-item" onclick="showReferral()">
       <div class="mi-icon" style="background:rgba(16,185,129,.1);">🤝</div>
       <div class="mi-label">Пригласить друга</div>
@@ -704,10 +705,11 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
       </div>
     </div>
     <div class="pw-feats">
-      <div class="pw-feat"><div class="pw-feat-ic">🔗</div>Интеграции: Strava, Apple Health, Garmin</div>
+      <div class="pw-feat"><div class="pw-feat-ic">🤖</div>ИИ-инсайты каждую неделю</div>
       <div class="pw-feat"><div class="pw-feat-ic">🤖</div>ИИ-инсайты еженедельно</div>
       <div class="pw-feat"><div class="pw-feat-ic">📊</div>Тепловая карта за год</div>
       <div class="pw-feat"><div class="pw-feat-ic">🔄</div>Синхронизация между устройствами</div>
+      <div class="pw-feat"><div class="pw-feat-ic">🤝</div>Реферальная программа — +7 дней Pro за друга</div>
       <div class="pw-feat"><div class="pw-feat-ic">📤</div>Экспорт и резервные копии</div>
     </div>
     <button class="pw-cta" onclick="closePW();openPaymentPage(document.querySelector('.pw-plan.hot')?.dataset?.plan || 'monthly')">Попробовать 7 дней бесплатно</button>
@@ -813,8 +815,8 @@ let currentUser = null; // { id, name, username, phone, isGuest }
 const DEFS = {
   run:      { icon:'🏃', name:'Бег',       color:'#10b981', bg:'rgba(16,185,129,.12)',  defTime:'07:00' },
   book:     { icon:'📚', name:'Чтение',    color:'#f59e0b', bg:'rgba(245,158,11,.12)',  defTime:'21:00' },
-  water:    { icon:'💧', name:'Вода',      color:'#3b82f6', bg:'rgba(59,130,246,.12)',  defTime:'09:00' },
-  meditate: { icon:'🧘', name:'Медитация', color:'#a855f7', bg:'rgba(168,85,247,.12)', defTime:'06:30' },
+  water:    { icon:'💧', name:'Вода',      color:'#3b82f6', bg:'rgba(59,130,246,.12)',  defTime:'09:00', extraTimes:['13:00','18:00','21:00'] },
+  meditate: { icon:'🧘', name:'Медитация', color:'#a855f7', bg:'rgba(168,85,247,.12)', defTime:'06:30', extraTimes:['12:00','20:00'] },
   sleep:    { icon:'😴', name:'Сон',       color:'#6366f1', bg:'rgba(99,102,241,.12)',  defTime:'22:30' },
   journal:  { icon:'✍️', name:'Дневник',  color:'#ec4899', bg:'rgba(236,72,153,.12)',  defTime:'22:00' },
   nutrition:{ icon:'🥗', name:'Питание',   color:'#84cc16', bg:'rgba(132,204,22,.12)',  defTime:'12:00' },
@@ -1242,9 +1244,8 @@ async function startApp() {
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 
-  // Проверяем статус Strava и Pro в фоне
+  // Обновляем профиль
   if (currentUser && !currentUser.isGuest) {
-    checkStravaStatus().catch(() => {});
     // Показываем Pro-статус в профиле
     if (currentUser.isPro) {
       const banner = document.querySelector('.pw-plan.hot, [onclick="openPaywall()"]');
@@ -1375,17 +1376,42 @@ function updateProgress() {
 }
 
 function updateProfile() {
-  const done = habits.filter(h => h.done).length;
+  const done  = habits.filter(h => h.done).length;
   const total = habits.length || 1;
   const maxStr = habits.length ? Math.max(...habits.map(h => h.streak)) : 0;
-  document.getElementById('p-streak').textContent  = maxStr + '🔥';
-  document.getElementById('p-rate').textContent    = Math.round(done/total*100) + '%';
-  document.getElementById('p-total').textContent   = habits.length;
-  if (currentUser && !currentUser.isGuest) {
+  document.getElementById('p-streak').textContent = maxStr + '🔥';
+  document.getElementById('p-rate').textContent   = Math.round(done/total*100) + '%';
+  document.getElementById('p-total').textContent  = habits.length;
+
+  const isGuest = !currentUser || currentUser.isGuest;
+  const guestCta  = document.getElementById('guest-cta');
+  const proBanner = document.getElementById('pro-banner');
+
+  if (isGuest) {
+    // Гость — показываем кнопку "Войти через Telegram"
+    if (guestCta)  guestCta.style.display  = 'flex';
+    if (proBanner) proBanner.style.display = 'none';
+    document.getElementById('prof-name').textContent = 'Гость';
+    document.getElementById('prof-av').textContent   = '👤';
+    document.getElementById('prof-sub').textContent  = 'Войди через Telegram чтобы сохранить данные';
+    document.getElementById('tg-menu-item').style.display = 'flex';
+  } else {
+    // Залогиненный
+    if (guestCta)  guestCta.style.display  = 'none';
+    if (proBanner) proBanner.style.display = currentUser.isPro ? 'none' : 'flex';
     document.getElementById('prof-name').textContent = currentUser.name || 'Пользователь';
     document.getElementById('prof-av').textContent   = currentUser.photo || '👤';
     document.getElementById('prof-sub').textContent  = '@' + (currentUser.username||'') + ' · Telegram ✅';
-    document.getElementById('home-greeting').textContent = `Привет, ${currentUser.name}! 👋`;
+    document.getElementById('home-greeting').textContent = 'Привет, ' + (currentUser.name||'') + '! 👋';
+    document.getElementById('tg-menu-item').style.display = 'none';
+
+    // Pro статус в баннере
+    if (currentUser.isPro && currentUser.proUntil) {
+      const until = new Date(currentUser.proUntil).toLocaleDateString('ru-RU');
+      // Show small pro badge instead
+      const profSub = document.getElementById('prof-sub');
+      if (profSub) profSub.textContent = '@' + (currentUser.username||'') + ' · ✨ Pro до ' + until;
+    }
   }
 }
 
@@ -1757,17 +1783,67 @@ function buildRemList() {
   const el = document.getElementById('rem-list');
   el.innerHTML = '';
   habits.forEach(h => {
+    const d = DEFS[h.type] || {};
+    const hasExtra = h.type === 'water' || h.type === 'meditate' || h.type === 'nutrition';
+    const extraTimes = h.extraTimes || d.extraTimes || [];
+
+    let extraHtml = '';
+    if (hasExtra && extraTimes.length) {
+      extraHtml = '<div style="font-size:11px;color:var(--ink3);margin:4px 0 6px;padding-left:28px;">Дополнительные напоминания:</div>';
+      extraTimes.forEach((t, i) => {
+        extraHtml += `<div class="rem-item" style="padding-left:28px;">
+          <span style="font-size:13px;color:var(--ink3);">+</span>
+          <span class="rem-name" style="font-size:13px;color:var(--ink2);">${h.name} (${i+2}-е)</span>
+          <input type="time" class="time-inp" value="${t}" onchange="setExtraRemTime('${h.id}',${i},this.value)">
+          <button onclick="removeExtraRem('${h.id}',${i})" style="background:rgba(240,79,94,.1);border:none;border-radius:6px;padding:4px 8px;color:var(--r);cursor:pointer;font-size:12px;">✕</button>
+        </div>`;
+      });
+      extraHtml += `<button onclick="addExtraRem('${h.id}')" style="margin-left:28px;margin-bottom:8px;padding:5px 12px;background:var(--card2);border:1px solid var(--line2);border-radius:var(--rsm);color:var(--v2);font-size:12px;cursor:pointer;">+ Добавить время</button>`;
+    }
+
     el.innerHTML += `
-      <div class="rem-item">
-        <span style="font-size:19px;">${h.icon}</span>
-        <span class="rem-name">${h.name}</span>
-        <input type="time" class="time-inp" value="${h.reminderTime||'08:00'}" onchange="setRemTime('${h.id}',this.value)">
-        <label class="tog">
-          <input type="checkbox" ${h.reminderOn ? 'checked' : ''} onchange="setRemOn('${h.id}',this.checked)">
-          <span class="tog-sl"></span>
-        </label>
+      <div style="padding:10px 0;border-bottom:1px solid var(--line);">
+        <div class="rem-item" style="border:none;padding:0;">
+          <span style="font-size:19px;">${h.icon}</span>
+          <span class="rem-name">${h.name}</span>
+          <input type="time" class="time-inp" value="${h.reminderTime||'08:00'}" onchange="setRemTime('${h.id}',this.value)">
+          <label class="tog">
+            <input type="checkbox" ${h.reminderOn ? 'checked' : ''} onchange="setRemOn('${h.id}',this.checked)">
+            <span class="tog-sl"></span>
+          </label>
+        </div>
+        ${extraHtml}
       </div>`;
   });
+}
+
+async function setExtraRemTime(id, idx, val) {
+  const h = habits.find(x => x.id === id);
+  if (!h) return;
+  if (!h.extraTimes) h.extraTimes = [];
+  h.extraTimes[idx] = val;
+  await dbPut('habits', h).catch(() => {});
+  toast('⏰ Напоминание обновлено: ' + val);
+}
+
+async function removeExtraRem(id, idx) {
+  const h = habits.find(x => x.id === id);
+  if (!h || !h.extraTimes) return;
+  h.extraTimes.splice(idx, 1);
+  await dbPut('habits', h).catch(() => {});
+  buildRemList();
+  toast('🗑 Напоминание удалено');
+}
+
+async function addExtraRem(id) {
+  const h = habits.find(x => x.id === id);
+  if (!h) return;
+  if (!h.extraTimes) h.extraTimes = [];
+  if (h.extraTimes.length >= 5) { toast('Максимум 5 напоминаний'); return; }
+  h.extraTimes.push('12:00');
+  await dbPut('habits', h).catch(() => {});
+  buildRemList();
+  toast('+ Напоминание добавлено');
 }
 async function setRemTime(id, val) {
   const h = habits.find(x => x.id === id);
@@ -1883,63 +1959,6 @@ function buildHeatmap() {
 /* ════════════════════════════════════════════════════════
    STRAVA INTEGRATION
 ════════════════════════════════════════════════════════ */
-async function connectStrava() {
-  const token = currentUser?.token;
-  if (!token || currentUser?.isGuest) {
-    toast('⚠️ Сначала войди через Telegram');
-    return;
-  }
-  try {
-    const resp = await fetch(BACKEND_URL + '/auth/strava', {
-      headers: { 'Authorization': 'Bearer ' + token },
-    });
-    if (!resp.ok) throw new Error('Failed');
-    const data = await resp.json();
-    // Открываем OAuth страницу Strava
-    window.open(data.authUrl, '_blank');
-    toast('🟠 Открываем Strava авторизацию...');
-  } catch(e) {
-    toast('⚠️ Ошибка подключения Strava');
-  }
-}
-
-async function checkStravaStatus() {
-  const token = currentUser?.token;
-  if (!token || currentUser?.isGuest) return;
-  try {
-    const resp = await fetch(BACKEND_URL + '/auth/strava/status', {
-      headers: { 'Authorization': 'Bearer ' + token },
-    });
-    if (!resp.ok) return;
-    const data = await resp.json();
-    const lbl = document.getElementById('strava-menu-label');
-    const rgt = document.getElementById('strava-menu-right');
-    if (data.connected) {
-      if (lbl) lbl.textContent = 'Strava подключена ✅';
-      if (rgt) { rgt.textContent = 'Синхр.'; rgt.style.color = 'var(--g)'; rgt.onclick = () => syncStrava(); }
-    }
-  } catch(e) {}
-}
-
-async function syncStrava() {
-  const token = currentUser?.token;
-  if (!token) return;
-  showSyncBar();
-  try {
-    await fetch(BACKEND_URL + '/strava/sync', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token },
-    });
-    await syncFromBackend(token);
-    renderHome();
-    toast('✅ Strava синхронизирована!');
-  } catch(e) {
-    toast('⚠️ Ошибка синхронизации');
-  } finally {
-    hideSyncBar();
-  }
-}
-
 /* ════════════════════════════════════════════════════════
    REFERRAL PROGRAM
 ════════════════════════════════════════════════════════ */
