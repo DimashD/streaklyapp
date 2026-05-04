@@ -1972,7 +1972,7 @@ async function showReferral() {
    AI INSIGHTS в профиле
 ════════════════════════════════════════════════════════ */
 async function showAIInsight() {
-  if (!currentUser?.isPro) {
+  if (!currentUser || !currentUser.isPro) {
     openPaywall();
     return;
   }
@@ -1983,19 +1983,33 @@ async function showAIInsight() {
     toast('⚠️ Не удалось загрузить инсайт. Проверь подключение.');
     return;
   }
-  // Показываем инсайт в модальном окне
   const modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:500;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:calc(20px + var(--sb))';
-  modal.innerHTML = `
-    <div style="background:var(--bg2);border-radius:28px 28px 0 0;padding:26px 22px;max-height:80dvh;overflow-y:auto;">
-      <div style="width:36px;height:4px;background:var(--card2);border-radius:99px;margin:0 auto 18px;"></div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-        <span style="background:var(--v);padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;">🤖 ИИ-АНАЛИЗ</span>
-      </div>
-      <div style="font-size:15px;color:var(--ink2);line-height:1.75;">${insight.replace(/
-/g,'<br>')}</div>
-      <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;margin-top:20px;padding:15px;background:var(--v);border:none;border-radius:var(--rsm);color:#fff;font-family:'Clash Display',sans-serif;font-size:16px;font-weight:700;cursor:pointer;">Закрыть</button>
-    </div>`;
+  
+  const sheet = document.createElement('div');
+  sheet.style.cssText = 'background:var(--bg2);border-radius:28px 28px 0 0;padding:26px 22px;max-height:80dvh;overflow-y:auto;';
+  
+  const handle = document.createElement('div');
+  handle.style.cssText = 'width:36px;height:4px;background:var(--card2);border-radius:99px;margin:0 auto 18px;';
+  
+  const badge = document.createElement('div');
+  badge.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:14px;';
+  badge.innerHTML = '<span style="background:var(--v);padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;">🤖 ИИ-АНАЛИЗ</span>';
+  
+  const text = document.createElement('div');
+  text.style.cssText = 'font-size:15px;color:var(--ink2);line-height:1.75;';
+  text.innerHTML = insight.split('\n').join('<br>');
+  
+  const btn = document.createElement('button');
+  btn.style.cssText = 'width:100%;margin-top:20px;padding:15px;background:var(--v);border:none;border-radius:var(--rsm);color:#fff;font-family:sans-serif;font-size:16px;font-weight:700;cursor:pointer;';
+  btn.textContent = 'Закрыть';
+  btn.onclick = () => modal.remove();
+  
+  sheet.appendChild(handle);
+  sheet.appendChild(badge);
+  sheet.appendChild(text);
+  sheet.appendChild(btn);
+  modal.appendChild(sheet);
   modal.onclick = e => { if (e.target === modal) modal.remove(); };
   document.body.appendChild(modal);
 }
