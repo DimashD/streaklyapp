@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Оплата — Streaklyapp Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@600;700&family=Cabinet+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#09090f; --card:#1a1a26; --card2:#222232;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --ink:#f0eeff; --ink2:#b0adcf; --ink3:#6a6888;
+  --v:#7c6af7; --v2:#a99afa; --g:#10d98a; --o:#f59e0b;
+  --tg:#229ED9; --kaspi:#E52322;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;min-height:100%;background:var(--bg);color:var(--ink);font-family:'Cabinet Grotesk',sans-serif;}
+
+.wrap{max-width:480px;margin:0 auto;padding:32px 20px 60px;}
+
+/* HEADER */
+.hdr{text-align:center;margin-bottom:36px;}
+.hdr-logo{font-size:48px;margin-bottom:12px;}
+.hdr-title{font-family:'Clash Display',sans-serif;font-size:26px;font-weight:700;color:var(--ink);margin-bottom:6px;}
+.hdr-sub{font-size:15px;color:var(--ink2);}
+
+/* PLAN CARD */
+.plan-card{background:linear-gradient(135deg,rgba(124,106,247,.18),rgba(168,85,247,.1));border:1px solid rgba(124,106,247,.35);border-radius:20px;padding:22px;margin-bottom:24px;text-align:center;}
+.plan-name{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--v2);margin-bottom:8px;}
+.plan-price{font-family:'Clash Display',sans-serif;font-size:40px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.plan-period{font-size:14px;color:var(--ink3);}
+.plan-features{display:flex;flex-direction:column;gap:8px;margin-top:16px;text-align:left;}
+.pf{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink2);}
+.pf-ic{width:24px;height:24px;border-radius:7px;background:rgba(124,106,247,.15);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+
+/* ORDER INFO */
+.order-info{background:var(--card);border-radius:14px;padding:16px;margin-bottom:20px;border:1px solid var(--line);}
+.oi-row{display:flex;justify-content:space-between;font-size:14px;color:var(--ink2);margin-bottom:8px;}
+.oi-row:last-child{margin:0;padding-top:8px;border-top:1px solid var(--line);font-weight:700;color:var(--ink);}
+.oi-val{font-family:monospace;font-size:13px;}
+
+/* PAYMENT METHODS */
+.pay-section-title{font-size:13px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;}
+
+.pay-method{background:var(--card);border:1.5px solid var(--line2);border-radius:16px;padding:18px;margin-bottom:12px;cursor:pointer;transition:all .2s;}
+.pay-method:hover{border-color:var(--v);}
+.pay-method.active{border-color:var(--kaspi);background:rgba(229,35,34,.05);}
+.pm-header{display:flex;align-items:center;gap:12px;}
+.pm-logo{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.pm-logo.kaspi{background:#E52322;}
+.pm-logo.tg{background:var(--tg);}
+.pm-info{flex:1;}
+.pm-name{font-size:15px;font-weight:700;color:var(--ink);}
+.pm-desc{font-size:13px;color:var(--ink3);margin-top:2px;}
+.pm-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;}
+.pm-badge.rec{background:rgba(16,217,138,.12);color:var(--g);}
+.pm-body{display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--line);}
+.pay-method.active .pm-body{display:block;}
+
+/* Kaspi instructions */
+.kaspi-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.ks{display:flex;align-items:flex-start;gap:10px;}
+.ks-num{width:24px;height:24px;border-radius:50%;background:var(--kaspi);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.ks-text{font-size:14px;color:var(--ink2);line-height:1.5;}
+.ks-text strong{color:var(--ink);}
+.ks-text code{background:rgba(255,255,255,.07);padding:2px 7px;border-radius:5px;font-family:monospace;font-size:13px;}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;border:none;border-radius:14px;font-family:'Cabinet Grotesk',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;margin-bottom:10px;text-decoration:none;}
+.btn:active{transform:scale(.97);}
+.btn-kaspi{background:#E52322;color:#fff;box-shadow:0 8px 24px rgba(229,35,34,.3);}
+.btn-tg{background:var(--tg);color:#fff;}
+.btn-outline{background:transparent;border:1.5px solid var(--line2);color:var(--ink2);}
+.btn-primary{background:var(--v);color:#fff;box-shadow:0 8px 24px rgba(124,106,247,.3);}
+
+/* Status screen */
+#status-screen{display:none;text-align:center;padding:40px 0;}
+.status-icon{font-size:72px;margin-bottom:16px;}
+.status-title{font-family:'Clash Display',sans-serif;font-size:24px;font-weight:700;margin-bottom:8px;}
+.status-sub{font-size:15px;color:var(--ink2);line-height:1.6;margin-bottom:28px;}
+
+/* Polling indicator */
+.polling{display:none;align-items:center;justify-content:center;gap:10px;padding:12px;background:rgba(16,217,138,.08);border:1px solid rgba(16,217,138,.2);border-radius:10px;margin-bottom:12px;font-size:13px;color:var(--g);}
+.polling.active{display:flex;}
+.poll-dot{width:8px;height:8px;border-radius:50%;background:var(--g);animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+
+/* Trust badges */
+.trust{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:24px;}
+.tb{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink3);background:var(--card);padding:6px 12px;border-radius:99px;border:1px solid var(--line);}
+
+.refund-note{font-size:12px;color:var(--ink3);text-align:center;margin-top:16px;line-height:1.6;}
+.refund-note a{color:var(--v2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-logo">🔥</div>
+    <div class="hdr-title">Streaklyapp Pro</div>
+    <div class="hdr-sub">Разблокируй полный потенциал своих привычек</div>
+  </div>
+
+  <!-- MAIN FLOW -->
+  <div id="main-flow">
+
+    <!-- PLAN (заполняется из URL params) -->
+    <div class="plan-card">
+      <div class="plan-name" id="plan-name">Стандарт</div>
+      <div class="plan-price" id="plan-price">2 990 <span style="font-size:20px;font-weight:400;">₸</span></div>
+      <div class="plan-period" id="plan-period">в месяц</div>
+      <div class="plan-features">
+        <div class="pf"><div class="pf-ic">🔗</div>Интеграция со Strava — авточекин</div>
+        <div class="pf"><div class="pf-ic">🤖</div>ИИ-инсайты каждую неделю</div>
+        <div class="pf"><div class="pf-ic">📊</div>Тепловая карта и полная аналитика</div>
+        <div class="pf"><div class="pf-ic">🔄</div>Синхронизация между устройствами</div>
+        <div class="pf"><div class="pf-ic">⚔️</div>Рейтинг с друзьями по привычкам</div>
+      </div>
+    </div>
+
+    <!-- ORDER -->
+    <div class="order-info">
+      <div class="oi-row"><span>Тариф</span><span id="oi-plan">Стандарт</span></div>
+      <div class="oi-row"><span>Номер заказа</span><span class="oi-val" id="oi-order">—</span></div>
+      <div class="oi-row"><span>Итого</span><span id="oi-total">2 990 ₸</span></div>
+    </div>
+
+    <!-- PAYMENT METHODS -->
+    <div class="pay-section-title">Способ оплаты</div>
+
+    <!-- Kaspi -->
+    <div class="pay-method active" onclick="selectMethod(this, 'kaspi')">
+      <div class="pm-header">
+        <div class="pm-logo kaspi">🟡</div>
+        <div class="pm-info">
+          <div class="pm-name">Kaspi.kz</div>
+          <div class="pm-desc">QR-код, Kaspi Pay, перевод</div>
+        </div>
+        <span class="pm-badge rec">Рекомендуем</span>
+      </div>
+      <div class="pm-body">
+        <div class="kaspi-steps">
+          <div class="ks">
+            <div class="ks-num">1</div>
+            <div class="ks-text">Нажми <strong>«Открыть Kaspi»</strong> — откроется QR или приложение Kaspi</div>
+          </div>
+          <div class="ks">
+            <div class="ks-num">2</div>
+            <div class="ks-text">В Kaspi выбери <strong>Оплата по QR</strong> → отсканируй или открой ссылку</div>
+          </div>
+          <div class="ks">
+            <div class="ks-num">3</div>
+            <div class="ks-text">В комментарии укажи номер заказа: <code id="order-code-kaspi">—</code></div>
+          </div>
+          <div class="ks">
+            <div class="ks-num">4</div>
+            <div class="ks-text">Нажми <strong>«Я оплатил»</strong> — подписка активируется автоматически</div>
+          </div>
+        </div>
+
+        <div class="polling" id="polling-indicator">
+          <div class="poll-dot"></div>
+          Проверяем оплату...
+        </div>
+
+        <a id="kaspi-btn" href="#" class="btn btn-kaspi" onclick="openKaspi(event)">
+          🟡 Открыть Kaspi
+        </a>
+        <button class="btn btn-outline" onclick="confirmPaid()">
+          ✅ Я оплатил — проверить
+        </button>
+      </div>
+    </div>
+
+    <!-- Telegram payment (если настроен) -->
+    <div class="pay-method" onclick="selectMethod(this, 'telegram')">
+      <div class="pm-header">
+        <div class="pm-logo tg">✈️</div>
+        <div class="pm-info">
+          <div class="pm-name">Telegram Payments</div>
+          <div class="pm-desc">Оплата картой через бота</div>
+        </div>
+      </div>
+      <div class="pm-body">
+        <p style="font-size:14px;color:var(--ink2);margin-bottom:14px;">
+          Оплати прямо в Telegram боте — Visa, Mastercard, Apple Pay.
+        </p>
+        <a href="#" class="btn btn-tg" onclick="openBot(event)">
+          ✈️ Оплатить через бота
+        </a>
+      </div>
+    </div>
+
+    <!-- Trial note -->
+    <div style="background:rgba(16,217,138,.07);border:1px solid rgba(16,217,138,.2);border-radius:12px;padding:14px;margin-top:8px;text-align:center;">
+      <div style="font-size:14px;color:var(--g);font-weight:600;">🎁 Первые 7 дней — бесплатно</div>
+      <div style="font-size:13px;color:var(--ink3);margin-top:4px;">Спишем только после пробного периода · Отмена в любой момент</div>
+    </div>
+
+    <!-- Trust -->
+    <div class="trust">
+      <div class="tb">🔒 Безопасная оплата</div>
+      <div class="tb">🇰🇿 Kaspi сертифицирован</div>
+      <div class="tb">↩️ Возврат 14 дней</div>
+    </div>
+
+    <div class="refund-note">
+      Оплачивая, ты принимаешь <a href="terms.html">Условия использования</a>.
+      Возврат в течение 14 дней — пиши на <a href="mailto:support@streaklyapp.app">support@streaklyapp.app</a>
+    </div>
+
+  </div><!-- /main-flow -->
+
+  <!-- SUCCESS SCREEN -->
+  <div id="status-screen">
+    <div class="status-icon" id="status-icon">⏳</div>
+    <div class="status-title" id="status-title">Проверяем оплату...</div>
+    <div class="status-sub" id="status-sub">Это займёт несколько секунд</div>
+    <a href="index.html" class="btn btn-primary" id="status-btn" style="display:none;">
+      🚀 Вернуться в приложение
+    </a>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+// ══════════════════════════════════════════════════
+// INIT — читаем параметры из URL
+// ══════════════════════════════════════════════════
+const params    = new URLSearchParams(location.search);
+const plan      = params.get('plan') || 'monthly';
+const paymentId = params.get('pid')  || '';
+const userId    = params.get('uid')  || '';
+const botUrl    = params.get('bot')  || 'https://t.me/streaklyapp_bot';
+const apiUrl    = params.get('api')  || 'https://api.streaklyapp.app';
+
+const PLANS = {
+  monthly: { name:'Стандарт',  price:'2 990', period:'в месяц',  amount: 2990 },
+  yearly:  { name:'Годовой',   price:'1 990', period:'в месяц · год', amount: 23880 },
+  family:  { name:'Семья × 5', price:'5 990', period:'в месяц',  amount: 5990 },
+};
+
+const p = PLANS[plan] || PLANS.monthly;
+document.getElementById('plan-name').textContent  = p.name;
+document.getElementById('plan-price').innerHTML   = p.price + ' <span style="font-size:20px;font-weight:400;">₸</span>';
+document.getElementById('plan-period').textContent = p.period;
+document.getElementById('oi-plan').textContent    = p.name;
+document.getElementById('oi-total').textContent   = p.price + ' ₸';
+
+const orderCode = paymentId ? `streaklyapp-${paymentId}` : 'streaklyapp-???';
+document.getElementById('oi-order').textContent    = orderCode;
+document.getElementById('order-code-kaspi').textContent = orderCode;
+
+// Kaspi QR URL
+const kaspiUrl = `https://pay.kaspi.kz/pay/qr?id=${params.get('merchant') || ''}&amount=${p.amount}&ref=${orderCode}`;
+document.getElementById('kaspi-btn').href = kaspiUrl;
+
+// ══════════════════════════════════════════════════
+// UI
+// ══════════════════════════════════════════════════
+let activeMethod = 'kaspi';
+
+function selectMethod(el, method) {
+  document.querySelectorAll('.pay-method').forEach(m => m.classList.remove('active'));
+  el.classList.add('active');
+  activeMethod = method;
+}
+
+function openKaspi(e) {
+  e.preventDefault();
+  // Сначала пробуем открыть приложение Kaspi через deeplink
+  const deepLink = `kaspi://payment?merchantId=${params.get('merchant') || ''}&amount=${p.amount}&orderId=${orderCode}`;
+  const fallback = kaspiUrl;
+
+  // На мобильных — пробуем deeplink, через 2с открываем браузер
+  const start = Date.now();
+  const timer = setTimeout(() => window.open(fallback, '_blank'), 2000);
+  window.location.href = deepLink;
+  setTimeout(() => {
+    if (Date.now() - start < 2100) clearTimeout(timer);
+  }, 2100);
+
+  // Начинаем поллинг
+  startPolling();
+}
+
+function openBot(e) {
+  e.preventDefault();
+  window.open(botUrl + `?start=pay_${plan}`, '_blank');
+  startPolling();
+}
+
+// ══════════════════════════════════════════════════
+// POLLING — проверяем статус оплаты
+// ══════════════════════════════════════════════════
+let pollInterval = null;
+let pollCount    = 0;
+
+function startPolling() {
+  if (!paymentId) return;
+  document.getElementById('polling-indicator').classList.add('active');
+  pollCount = 0;
+  pollInterval = setInterval(checkPayment, 5000); // каждые 5 сек
+}
+
+function stopPolling() {
+  clearInterval(pollInterval);
+  document.getElementById('polling-indicator').classList.remove('active');
+}
+
+async function checkPayment() {
+  if (!paymentId) return;
+  pollCount++;
+
+  // Через 3 минуты останавливаем поллинг
+  if (pollCount > 36) {
+    stopPolling();
+    return;
+  }
+
+  try {
+    const resp = await fetch(`${apiUrl}/payments/${paymentId}/status`, {
+      headers: { 'X-Internal-User-Id': userId || '0' }
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+
+    if (data.status === 'paid') {
+      stopPolling();
+      showSuccess();
+    }
+  } catch (e) {
+    console.warn('Poll error:', e);
+  }
+}
+
+function confirmPaid() {
+  // Пользователь нажал "Я оплатил" — показываем экран ожидания и продолжаем поллинг
+  document.getElementById('main-flow').style.display = 'none';
+  document.getElementById('status-screen').style.display = 'block';
+  document.getElementById('status-icon').textContent  = '⏳';
+  document.getElementById('status-title').textContent = 'Проверяем оплату...';
+  document.getElementById('status-sub').textContent   = 'Обычно занимает до 15 минут. Не закрывай страницу.';
+  startPolling();
+
+  // Через 15 минут если не подтвердилось — показываем "ожидает проверки"
+  setTimeout(() => {
+    if (document.getElementById('status-icon').textContent === '⏳') {
+      stopPolling();
+      document.getElementById('status-icon').textContent  = '📋';
+      document.getElementById('status-title').textContent = 'Ожидает проверки';
+      document.getElementById('status-sub').textContent   =
+        'Мы получили уведомление и проверим оплату вручную. '
+        + 'Подписка активируется в течение 15 минут.\n\nЕсли возникли вопросы — напиши в support@streaklyapp.app';
+      document.getElementById('status-btn').style.display = 'flex';
+    }
+  }, 15 * 60 * 1000);
+}
+
+function showSuccess() {
+  document.getElementById('main-flow').style.display  = 'none';
+  document.getElementById('status-screen').style.display = 'block';
+  document.getElementById('status-icon').textContent  = '🎉';
+  document.getElementById('status-title').textContent = 'Pro активирован!';
+  document.getElementById('status-sub').textContent   =
+    'Все функции разблокированы. '
+    + 'Интеграция со Strava, ИИ-инсайты, синхронизация между устройствами — всё твоё!';
+  document.getElementById('status-btn').style.display = 'flex';
+}
+
+// Если открыли страницу с ?success=1 (редирект после Kaspi)
+if (params.get('success') === '1') showSuccess();
+if (params.get('pending') === '1') confirmPaid();
+</script>
+</body>
+</html>

@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Streaklyapp Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════
+   TOKENS
+══════════════════════════════════════ */
+:root {
+  --bg:     #07080c;
+  --bg2:    #0d0f16;
+  --bg3:    #12141e;
+  --panel:  #161821;
+  --card:   #1b1d28;
+  --card2:  #21232f;
+  --line:   rgba(255,255,255,0.06);
+  --line2:  rgba(255,255,255,0.1);
+
+  /* Signal colors */
+  --ink:    #e8e6f5;
+  --ink2:   #a8a5c2;
+  --ink3:   #5c596f;
+  --accent: #7c6af7;   /* indigo */
+  --ac2:    #a99afa;
+  --green:  #10d987;
+  --red:    #f04f5e;
+  --amber:  #f5a524;
+  --sky:    #38b2f8;
+  --pink:   #e879a0;
+
+  --sidebar-w: 220px;
+  --header-h:  58px;
+  --r:  12px;
+  --rsm: 8px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════
+   LAYOUT SHELL
+══════════════════════════════════════ */
+#root {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: var(--header-h) 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════
+   TOPBAR
+══════════════════════════════════════ */
+#topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--line);
+  gap: 16px;
+  z-index: 100;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  padding-right: 20px;
+}
+.brand-logo {
+  width: 28px; height: 28px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.brand-name {
+  font-family: 'Instrument Serif', serif;
+  font-size: 18px;
+  color: var(--ink);
+}
+.brand-badge {
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(124,106,247,0.2);
+  color: var(--ac2);
+  padding: 2px 7px;
+  border-radius: 99px;
+  letter-spacing: .5px;
+}
+
+.topbar-search {
+  flex: 1;
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line2);
+  border-radius: var(--rsm);
+  padding: 7px 12px;
+  color: var(--ink3);
+  font-size: 13px;
+  cursor: text;
+}
+.topbar-search input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--ink);
+  font-size: 13px;
+  font-family: 'Geist', sans-serif;
+  flex: 1;
+}
+.topbar-search input::placeholder { color: var(--ink3); }
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tb-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tb-pill.healthy { background: rgba(16,217,135,0.1); color: var(--green); }
+.tb-pill.warn    { background: rgba(245,165,36,0.1);  color: var(--amber); }
+
+.topbar-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--pink));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════ */
+#sidebar {
+  background: var(--bg2);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+  overflow-y: auto;
+}
+
+.nav-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--ink3);
+  text-transform: uppercase;
+  padding: 14px 18px 6px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 18px;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background .15s;
+  color: var(--ink2);
+  font-size: 13px;
+  font-weight: 500;
+  position: relative;
+  user-select: none;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.nav-item:hover { background: rgba(255,255,255,0.04); color: var(--ink); }
+.nav-item.active {
+  background: rgba(124,106,247,0.12);
+  color: var(--ink);
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 4px; bottom: 4px;
+  width: 3px;
+  background: var(--accent);
+  border-radius: 0 3px 3px 0;
+}
+.nav-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 99px;
+  min-width: 18px;
+  text-align: center;
+}
+.nav-badge.red { background: var(--red); }
+.nav-badge.amber { background: var(--amber); color: #000; }
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line);
+}
+.sb-version { font-size: 11px; color: var(--ink3); font-family: 'DM Mono', monospace; }
+
+/* ══════════════════════════════════════
+   MAIN CONTENT
+══════════════════════════════════════ */
+#main {
+  overflow-y: auto;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+#main::-webkit-scrollbar { width: 4px; }
+#main::-webkit-scrollbar-thumb { background: var(--card2); border-radius: 99px; }
+
+.view { display: none; flex-direction: column; flex: 1; padding: 28px; gap: 24px; }
+.view.active { display: flex; }
+
+/* ══════════════════════════════════════
+   VIEW HEADER
+══════════════════════════════════════ */
+.view-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.vh-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 26px;
+  color: var(--ink);
+  line-height: 1;
+}
+.vh-sub { font-size: 13px; color: var(--ink3); margin-top: 3px; }
+.vh-actions { display: flex; gap: 8px; align-items: center; }
+
+/* ══════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--rsm);
+  border: none;
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { opacity: .88; }
+.btn-ghost { background: var(--card); color: var(--ink2); border: 1px solid var(--line2); }
+.btn-ghost:hover { background: var(--card2); color: var(--ink); }
+.btn-danger { background: rgba(240,79,94,.12); color: var(--red); border: 1px solid rgba(240,79,94,.2); }
+
+/* ══════════════════════════════════════
+   KPI GRID
+══════════════════════════════════════ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.kpi {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 8px;
+}
+.kpi-val {
+  font-family: 'Instrument Serif', serif;
+  font-size: 32px;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.kpi-delta {
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.kpi-delta.up { color: var(--green); }
+.kpi-delta.down { color: var(--red); }
+.kpi-delta.neutral { color: var(--ink3); }
+.kpi-spark {
+  position: absolute;
+  bottom: 0; right: 0;
+  opacity: .35;
+  font-size: 48px;
+  line-height: 1;
+  padding: 4px 10px;
+}
+
+/* ══════════════════════════════════════
+   GRID LAYOUTS
+══════════════════════════════════════ */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+
+/* ══════════════════════════════════════
+   CARD
+══════════════════════════════════════ */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.card-action {
+  font-size: 12px;
+  color: var(--ac2);
+  cursor: pointer;
+  font-weight: 500;
+}
+.card-body { padding: 16px 20px; }
+
+/* ══════════════════════════════════════
+   CHART BAR (SVG-free CSS bar chart)
+══════════════════════════════════════ */
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 100px;
+  padding-bottom: 2px;
+}
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  height: 100%;
+  justify-content: flex-end;
+}
+.bar-fill {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  transition: height .6s cubic-bezier(.34,1.56,.64,1);
+  min-height: 3px;
+  position: relative;
+  cursor: pointer;
+}
+.bar-fill:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card2);
+  border: 1px solid var(--line2);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--ink);
+  white-space: nowrap;
+  font-family: 'Geist', sans-serif;
+}
+.bar-label { font-size: 10px; color: var(--ink3); font-family: 'DM Mono', monospace; }
+
+/* ══════════════════════════════════════
+   FUNNEL CHART
+══════════════════════════════════════ */
+.funnel { display: flex; flex-direction: column; gap: 6px; }
+.funnel-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.funnel-label { font-size: 12px; color: var(--ink2); min-width: 100px; }
+.funnel-track {
+  flex: 1;
+  height: 24px;
+  background: var(--card2);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.funnel-fill {
+  height: 100%;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,.8);
+  white-space: nowrap;
+  transition: width .8s cubic-bezier(.34,1.56,.64,1);
+}
+.funnel-pct { font-size: 11px; color: var(--ink3); min-width: 36px; text-align: right; font-family: 'DM Mono', monospace; }
+
+/* ══════════════════════════════════════
+   USER TABLE
+══════════════════════════════════════ */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg2);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--ink2);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border: none; }
+.data-table tr:hover td { background: rgba(255,255,255,0.02); }
+.data-table td:first-child { color: var(--ink); }
+
+.user-row { display: flex; align-items: center; gap: 8px; }
+.u-av {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  font-weight: 700;
+  font-family: 'Geist', sans-serif;
+}
+.u-name { font-size: 13px; font-weight: 500; color: var(--ink); }
+.u-email { font-size: 11px; color: var(--ink3); }
+
+/* Status badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.badge-green  { background: rgba(16,217,135,.1);  color: var(--green); }
+.badge-red    { background: rgba(240,79,94,.1);   color: var(--red); }
+.badge-amber  { background: rgba(245,165,36,.1);  color: var(--amber); }
+.badge-blue   { background: rgba(56,178,248,.1);  color: var(--sky); }
+.badge-purple { background: rgba(124,106,247,.1); color: var(--ac2); }
+
+/* Mini sparkline using div */
+.sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 24px;
+}
+.sp-bar {
+  width: 4px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  opacity: .7;
+  min-height: 2px;
+}
+
+/* ══════════════════════════════════════
+   RETENTION HEATMAP
+══════════════════════════════════════ */
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.hm-cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: var(--card2);
+  cursor: pointer;
+  position: relative;
+  transition: transform .1s;
+}
+.hm-cell:hover { transform: scale(1.3); z-index: 2; }
+.hm-cell[data-level="1"] { background: rgba(124,106,247,.2); }
+.hm-cell[data-level="2"] { background: rgba(124,106,247,.4); }
+.hm-cell[data-level="3"] { background: rgba(124,106,247,.65); }
+.hm-cell[data-level="4"] { background: var(--accent); }
+.hm-days { display: flex; gap: 3px; margin-top: 6px; }
+.hm-day { flex: 1; font-size: 9px; color: var(--ink3); text-align: center; font-family: 'DM Mono', monospace; }
+
+/* ══════════════════════════════════════
+   REVENUE CHART (big)
+══════════════════════════════════════ */
+.rev-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 140px;
+}
+.rev-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  height: 100%;
+  justify-content: flex-end;
+}
+.rev-bar {
+  width: 100%;
+  border-radius: 5px 5px 0 0;
+  min-height: 4px;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.rev-bar:hover { opacity: .8; }
+.rev-label { font-size: 10px; color: var(--ink3); font-family: 'DM Mono', monospace; }
+
+/* ══════════════════════════════════════
+   ALERTS / ISSUES
+══════════════════════════════════════ */
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.alert-item:last-child { border: none; padding-bottom: 0; }
+.alert-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.alert-dot.crit { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.alert-dot.warn { background: var(--amber); }
+.alert-dot.info { background: var(--sky); }
+.alert-title { font-size: 13px; color: var(--ink); font-weight: 500; margin-bottom: 2px; }
+.alert-desc { font-size: 12px; color: var(--ink3); line-height: 1.5; }
+.alert-time { font-size: 11px; color: var(--ink3); font-family: 'DM Mono', monospace; margin-top: 4px; }
+
+/* ══════════════════════════════════════
+   ROADMAP VIEW
+══════════════════════════════════════ */
+.quarter-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+.quarter-col { display: flex; flex-direction: column; gap: 10px; }
+.quarter-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ink3);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.rm-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--rsm);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+}
+.rm-card:hover { border-color: var(--line2); background: var(--card2); }
+.rm-card.done { opacity: .55; }
+.rm-card.done::after { content: '✓'; position: absolute; top: 8px; right: 10px; color: var(--green); font-weight: 700; font-size: 12px; }
+.rm-card.active { border-color: var(--accent); background: rgba(124,106,247,.06); }
+.rm-card.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); border-radius: 3px 0 0 3px; }
+.rm-cat {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  margin-bottom: 5px;
+}
+.rm-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.rm-desc { font-size: 11px; color: var(--ink3); line-height: 1.5; }
+.rm-effort {
+  display: flex;
+  gap: 3px;
+  margin-top: 8px;
+}
+.rm-pip { width: 8px; height: 4px; border-radius: 99px; background: var(--card2); }
+.rm-pip.filled { background: var(--accent); }
+
+/* ══════════════════════════════════════
+   TECH DEBT VIEW
+══════════════════════════════════════ */
+.debt-item {
+  display: grid;
+  grid-template-columns: 20px 1fr auto auto;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.debt-item:last-child { border: none; }
+.debt-sev {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.debt-title { font-size: 13px; color: var(--ink); font-weight: 500; margin-bottom: 3px; }
+.debt-desc { font-size: 12px; color: var(--ink3); line-height: 1.5; }
+.debt-effort { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink3); white-space: nowrap; }
+
+/* ══════════════════════════════════════
+   TELEGRAM BOT STATUS
+══════════════════════════════════════ */
+.bot-stat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 0; }
+.bot-stat {
+  background: var(--card2);
+  border-radius: var(--rsm);
+  padding: 14px;
+  border: 1px solid var(--line);
+}
+.bot-stat-val { font-family: 'Instrument Serif', serif; font-size: 26px; color: var(--ink); margin-bottom: 2px; }
+.bot-stat-lbl { font-size: 11px; color: var(--ink3); }
+
+.msg-preview {
+  background: var(--card2);
+  border: 1px solid var(--line);
+  border-radius: var(--rsm);
+  padding: 14px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--ink2);
+  line-height: 1.8;
+  margin-top: 0;
+}
+.msg-preview .cmd { color: var(--ac2); }
+.msg-preview .user-msg { color: var(--green); }
+.msg-preview .bot-msg { color: var(--ink); }
+.msg-preview .comment { color: var(--ink3); }
+
+/* ══════════════════════════════════════
+   SETTINGS FORM
+══════════════════════════════════════ */
+.form-section { margin-bottom: 24px; }
+.form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  margin-bottom: 12px;
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+.form-field { display: flex; flex-direction: column; gap: 5px; }
+.form-field label { font-size: 12px; color: var(--ink2); }
+.form-field input, .form-field select, .form-field textarea {
+  background: var(--card);
+  border: 1px solid var(--line2);
+  border-radius: var(--rsm);
+  padding: 9px 12px;
+  color: var(--ink);
+  font-size: 13px;
+  font-family: 'Geist', sans-serif;
+  outline: none;
+  transition: border-color .2s;
+}
+.form-field input:focus, .form-field select:focus { border-color: var(--accent); }
+.form-field input::placeholder, .form-field textarea::placeholder { color: var(--ink3); }
+
+/* Toggle switch */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.toggle-row:last-child { border: none; }
+.toggle-info { }
+.toggle-info-title { font-size: 13px; color: var(--ink); font-weight: 500; }
+.toggle-info-desc { font-size: 12px; color: var(--ink3); margin-top: 2px; }
+.toggle-sw {
+  width: 40px; height: 22px;
+  border-radius: 99px;
+  background: var(--card2);
+  border: 1px solid var(--line2);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background .25s;
+}
+.toggle-sw.on { background: var(--accent); border-color: var(--accent); }
+.toggle-sw::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+.toggle-sw.on::after { transform: translateX(18px); }
+
+/* ══════════════════════════════════════
+   MINI COMPONENTS
+══════════════════════════════════════ */
+.mono { font-family: 'DM Mono', monospace; }
+.divider { height: 1px; background: var(--line); }
+
+.progress-thin {
+  height: 4px;
+  background: var(--card2);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.progress-thin-fill { height: 100%; border-radius: 99px; }
+
+/* Tooltip */
+[title] { cursor: help; }
+
+/* ══════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════ */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: var(--card2); border-radius: 99px; }
+
+/* ══════════════════════════════════════
+   RESPONSIVE — compact at 1200px
+══════════════════════════════════════ */
+@media (max-width: 1200px) {
+  .kpi-grid { grid-template-columns: repeat(2,1fr); }
+  .quarter-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 900px) {
+  :root { --sidebar-w: 0px; }
+  #sidebar { display: none; }
+  #root { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="root">
+
+<!-- ═══════════════════════════════ TOPBAR ═══════════════════════════════ -->
+<div id="topbar">
+  <div class="brand">
+    <div class="brand-logo">🔥</div>
+    <div class="brand-name">Streaklyapp</div>
+    <div class="brand-badge">ADMIN</div>
+  </div>
+
+  <div class="topbar-search">
+    <span style="font-size:14px;">🔍</span>
+    <input placeholder="Поиск пользователей, событий...">
+    <span style="font-size:11px;opacity:.5;font-family:'DM Mono',monospace;">⌘K</span>
+  </div>
+
+  <div class="topbar-right">
+    <div class="tb-pill healthy" id="sys-status">● Все системы OK</div>
+    <div style="font-size:13px;color:var(--ink3);" class="mono" id="live-time"></div>
+    <div class="topbar-avatar" title="Профиль администратора">А</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SIDEBAR ═══════════════════════════════ -->
+<div id="sidebar">
+  <div class="nav-section-label">Обзор</div>
+  <button class="nav-item active" onclick="show('dashboard')">
+    <span class="nav-icon">📊</span> Дашборд
+  </button>
+  <button class="nav-item" onclick="show('users')">
+    <span class="nav-icon">👥</span> Пользователи
+    <span class="nav-badge">1 284</span>
+  </button>
+  <button class="nav-item" onclick="show('revenue')">
+    <span class="nav-icon">💰</span> Доходы
+  </button>
+  <button class="nav-item" onclick="show('retention')">
+    <span class="nav-icon">🔁</span> Удержание
+  </button>
+
+  <div class="nav-section-label">Продукт</div>
+  <button class="nav-item" onclick="show('roadmap')">
+    <span class="nav-icon">🗺</span> Роадмап
+    <span class="nav-badge amber">12</span>
+  </button>
+  <button class="nav-item" onclick="show('techdebt')">
+    <span class="nav-icon">🔧</span> Tech Debt
+    <span class="nav-badge red">3</span>
+  </button>
+  <button class="nav-item" onclick="show('telegram')">
+    <span class="nav-icon">✈️</span> Telegram Bot
+  </button>
+  <button class="nav-item" onclick="show('integrations')">
+    <span class="nav-icon">🔗</span> Интеграции
+  </button>
+
+  <div class="nav-section-label">Система</div>
+  <button class="nav-item" onclick="show('alerts')">
+    <span class="nav-icon">🚨</span> Алерты
+    <span class="nav-badge red">3</span>
+  </button>
+  <button class="nav-item" onclick="show('settings')">
+    <span class="nav-icon">⚙️</span> Настройки
+  </button>
+
+  <div class="sidebar-bottom">
+    <div class="sb-version">v2.1.0 · build 20250501</div>
+    <div style="font-size:11px;color:var(--ink3);margin-top:3px;">IndexedDB · DB_VER=2</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MAIN ═══════════════════════════════ -->
+<div id="main">
+
+  <!-- ════════ DASHBOARD ════════ -->
+  <div class="view active" id="v-dashboard">
+    <div class="view-header">
+      <div>
+        <div class="vh-title">Дашборд</div>
+        <div class="vh-sub">Реальное время · обновляется каждые 30 сек</div>
+      </div>
+      <div class="vh-actions">
+        <button class="btn btn-ghost">📅 Апрель 2025</button>
+        <button class="btn btn-primary">⬇ Экспорт</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">Активных пользователей (DAU)</div>
+        <div class="kpi-val">1 284</div>
+        <div class="kpi-delta up">↑ +18.4% vs прошлый мес</div>
+        <div class="kpi-spark">👥</div>
+      </div>
+      <div class="kpi" style="border-color:rgba(16,217,135,.15);">
+        <div class="kpi-label">MRR</div>
+        <div class="kpi-val" style="color:var(--green);">₸ 1.24M</div>
+        <div class="kpi-delta up">↑ +24.1% MoM</div>
+        <div class="kpi-spark">💰</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Платящих пользователей</div>
+        <div class="kpi-val">414</div>
+        <div class="kpi-delta up">↑ +31 за эту неделю</div>
+        <div class="kpi-spark">✨</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">D7 Retention</div>
+        <div class="kpi-val">68%</div>
+        <div class="kpi-delta neutral">→ бенчмарк 65%</div>
+        <div class="kpi-spark">🔁</div>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="grid-3">
+      <!-- Revenue chart -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">MRR по месяцам (₸)</div>
+          <div class="card-action" onclick="show('revenue')">Подробнее →</div>
+        </div>
+        <div class="card-body">
+          <div class="rev-chart" id="rev-chart"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;" id="rev-labels"></div>
+        </div>
+      </div>
+
+      <!-- Funnel -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Воронка конверсии</div>
+        </div>
+        <div class="card-body">
+          <div class="funnel">
+            <div class="funnel-row">
+              <div class="funnel-label">Установки</div>
+              <div class="funnel-track"><div class="funnel-fill" style="width:100%;background:var(--accent);">3 412</div></div>
+              <div class="funnel-pct">100%</div>
+            </div>
+            <div class="funnel-row">
+              <div class="funnel-label">Онбординг</div>
+              <div class="funnel-track"><div class="funnel-fill" style="width:78%;background:var(--sky);">2 661</div></div>
+              <div class="funnel-pct">78%</div>
+            </div>
+            <div class="funnel-row">
+              <div class="funnel-label">Активны 7 дней</div>
+              <div class="funnel-track"><div class="funnel-fill" style="width:38%;background:var(--green);">1 284</div></div>
+              <div class="funnel-pct">38%</div>
+            </div>
+            <div class="funnel-row">
+              <div class="funnel-label">Paywall view</div>
+              <div class="funnel-track"><div class="funnel-fill" style="width:22%;background:var(--amber);">751</div></div>
+              <div class="funnel-pct">22%</div>
+            </div>
+            <div class="funnel-row">
+              <div class="funnel-label">Платящие</div>
+              <div class="funnel-track"><div class="funnel-fill" style="width:12%;background:var(--pink);">414</div></div>
+              <div class="funnel-pct">12.1%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3 -->
+    <div class="grid-2">
+      <!-- Top habits -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Популярность привычек</div>
+          <div class="card-action">DAU</div>
+        </div>
+        <div class="card-body">
+          <div class="bar-chart" id="habit-chart"></div>
+        </div>
+      </div>
+
+      <!-- Alerts preview -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">🚨 Алерты (3 активных)</div>
+          <div class="card-action" onclick="show('alerts')">Все →</div>
+        </div>
+        <div class="card-body" style="padding-top:4px;">
+          <div class="alert-item">
+            <div class="alert-dot crit"></div>
+            <div>
+              <div class="alert-title">Streak-пересчёт не синхронизирован с checkins</div>
+              <div class="alert-desc">h.streak хранится в памяти, при PWA reinstall пользователь теряет стрик</div>
+              <div class="alert-time">КРИТИЧНО · Tech Debt #1</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-dot warn"></div>
+            <div>
+              <div class="alert-title">Water/Meditation данные не сохраняются в IndexedDB</div>
+              <div class="alert-desc">addToRing() вызывает только toast(), без dbPut — данные теряются при перезагрузке</div>
+              <div class="alert-time">ВЫСОКИЙ · Tech Debt #2</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-dot info"></div>
+            <div>
+              <div class="alert-title">Нет cross-device синхронизации</div>
+              <div class="alert-desc">IndexedDB — браузерное хранилище. Смена устройства = потеря всех данных</div>
+              <div class="alert-time">СРЕДНИЙ · нужен бэкенд</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ USERS ════════ -->
+  <div class="view" id="v-users">
+    <div class="view-header">
+      <div>
+        <div class="vh-title">Пользователи</div>
+        <div class="vh-sub">1 284 активных · 414 платящих</div>
+      </div>
+      <div class="vh-actions">
+        <button class="btn btn-ghost">🔍 Фильтр</button>
+        <button class="btn btn-ghost">⬇ CSV</button>
+        <button class="btn btn-primary">+ Пригласить</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Все пользователи</div>
+        <div style="display:flex;gap:8px;">
+          <span class="badge badge-green">● Активен</span>
+          <span class="badge badge-red">● Churned</span>
+          <span class="badge badge-purple">★ Pro</span>
+        </div>
+      </div>
+      <table class="data-table" id="users-table"></table>
+    </div>
+  </div>
+
+  <!-- ════════ REVENUE ════════ -->
+  <div class="view" id="v-revenue">
+    <div class="view-header">
+      <div>
+        <div class="vh-title">Доходы</div>
+        <div class="vh-sub">MRR ₸ 1 237 500 · ARR ₸ 14 850 000</div>
+      </div>
+      <div class="vh-actions">
+        <button class="btn btn-ghost">Kaspi QR</button>
+        <button class="btn btn-ghost">CloudPayments</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">MRR</div><div class="kpi-val" style="color:var(--green);">₸ 1.24M</div><div class="kpi-delta up">↑ +24.1% MoM</div></div>
+      <div class="kpi"><div class="kpi-label">ARPU</div><div class="kpi-val">₸ 2 990</div><div class="kpi-delta neutral">→ цель ₸ 3 200</div></div>
+      <div class="kpi"><div class="kpi-label">Churn Rate</div><div class="kpi-val" style="color:var(--amber);">4.2%</div><div class="kpi-delta down">↑ цель <3%</div></div>
+      <div class="kpi"><div class="kpi-label">LTV</div><div class="kpi-val">₸ 71 200</div><div class="kpi-delta up">↑ +8% vs Q1</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-title">MRR по месяцам</div></div>
+      <div class="card-body">
+        <div class="rev-chart" id="rev-chart-big" style="height:180px;"></div>
+        <div style="display:flex;gap:8px;margin-top:10px;" id="rev-labels-big"></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Разбивка по тарифам</div></div>
+        <div class="card-body">
+          <div class="funnel" style="gap:10px;">
+            <div class="funnel-row">
+              <div class="funnel-label">Стандарт · 2 990 ₸</div>
+              <div class="funnel-track"><div class="funnel-fill" style="width:72%;background:var(--accent);">298 чел</div></div>
+              <div class="funnel-pct">72%</div>
+            </div>
+            <div class="funnel-row">
+              <div class="funnel-label">Годовой · 1 990 ₸/м</div>
+              <div class="funnel-track"><div class="funnel-fill" style="width:20%;background:var(--green);">83 чел</div></div>
+              <div class="funnel-pct">20%</div>
+            </div>
+            <div class="funnel-row">
+              <div class="funnel-label">Семья · 5 990 ₸</div>
+              <div class="funnel-track"><div class="funnel-fill" style="width:8%;background:var(--pink);">33 чел</div></div>
+              <div class="funnel-pct">8%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Прогноз</div></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <div style="font-size:12px;color:var(--ink3);margin-bottom:4px;">Цель May 2025</div>
+              <div style="font-size:24px;font-family:'Instrument Serif',serif;color:var(--green);">₸ 1.55M</div>
+              <div class="progress-thin"><div class="progress-thin-fill" style="width:80%;background:var(--green);"></div></div>
+              <div style="font-size:11px;color:var(--ink3);margin-top:3px;">80% от цели</div>
+            </div>
+            <div class="divider"></div>
+            <div>
+              <div style="font-size:12px;color:var(--ink3);margin-bottom:4px;">Цель Q3 2025</div>
+              <div style="font-size:24px;font-family:'Instrument Serif',serif;color:var(--accent);">₸ 5M MRR</div>
+              <div class="progress-thin"><div class="progress-thin-fill" style="width:25%;background:var(--accent);"></div></div>
+              <div style="font-size:11px;color:var(--ink3);margin-top:3px;">25% от цели · нужно 1 673 платящих</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ RETENTION ════════ -->
+  <div class="view" id="v-retention">
+    <div class="view-header">
+      <div>
+        <div class="vh-title">Удержание</div>
+        <div class="vh-sub">D7: 68% · D30: 41% · D90: 28%</div>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">D1 Retention</div><div class="kpi-val">84%</div><div class="kpi-delta up">↑ отлично</div></div>
+      <div class="kpi"><div class="kpi-label">D7 Retention</div><div class="kpi-val">68%</div><div class="kpi-delta up">↑ выше бенчмарка</div></div>
+      <div class="kpi"><div class="kpi-label">D30 Retention</div><div class="kpi-val">41%</div><div class="kpi-delta neutral">→ бенчмарк 40%</div></div>
+      <div class="kpi"><div class="kpi-label">Avg Streak</div><div class="kpi-val">8.3</div><div class="kpi-delta up">↑ дней подряд</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Активность — 4 недели</div></div>
+        <div class="card-body">
+          <div class="heatmap-grid" id="heatmap"></div>
+          <div class="hm-days" id="hm-days"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Когортный анализ</div></div>
+        <div class="card-body">
+          <div class="funnel">
+            <div class="funnel-row"><div class="funnel-label">Янв 2025</div><div class="funnel-track"><div class="funnel-fill" style="width:32%;background:var(--accent);">D90: 32%</div></div></div>
+            <div class="funnel-row"><div class="funnel-label">Фев 2025</div><div class="funnel-track"><div class="funnel-fill" style="width:38%;background:var(--sky);">D60: 38%</div></div></div>
+            <div class="funnel-row"><div class="funnel-label">Мар 2025</div><div class="funnel-track"><div class="funnel-fill" style="width:51%;background:var(--green);">D30: 51%</div></div></div>
+            <div class="funnel-row"><div class="funnel-label">Апр 2025</div><div class="funnel-track"><div class="funnel-fill" style="width:68%;background:var(--amber);">D7: 68%</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ ROADMAP ════════ -->
+  <div class="view" id="v-roadmap">
+    <div class="view-header">
+      <div>
+        <div class="vh-title">Роадмап</div>
+        <div class="vh-sub">12 задач · 3 в работе · 4 выполнено</div>
+      </div>
+      <div class="vh-actions">
+        <button class="btn btn-ghost">Kanban</button>
+        <button class="btn btn-primary">+ Задача</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px;">
+      <span class="badge badge-purple">● Активно</span>
+      <span class="badge badge-green">✓ Готово</span>
+      <span class="badge" style="background:rgba(255,255,255,.05);color:var(--ink3);">○ Планируется</span>
+      <span style="font-size:12px;color:var(--ink3);align-self:center;margin-left:8px;">Пипсы = уровень усилий (1–5)</span>
+    </div>
+
+    <div class="quarter-grid" id="roadmap-grid"></div>
+  </div>
+
+  <!-- ════════ TECH DEBT ════════ -->
+  <div class="view" id="v-techdebt">
+    <div class="view-header">
+      <div>
+        <div class="vh-title">Tech Debt</div>
+        <div class="vh-sub">3 критичных · 2 высоких · 4 средних</div>
+      </div>
+      <div class="vh-actions">
+        <button class="btn btn-danger">🚨 3 КРИТИЧНЫХ</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-title">🚨 Критические — данные под угрозой</div></div>
+      <div class="card-body" style="padding-top:6px;" id="debt-crit"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">⚠️ Высокий приоритет</div></div>
+      <div class="card-body" style="padding-top:6px;" id="debt-high"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">📋 Средний приоритет</div></div>
+      <div class="card-body" style="padding-top:6px;" id="debt-med"></div>
+    </div>
+  </div>
+
+  <!-- ════════ TELEGRAM BOT ════════ -->
+  <div class="view" id="v-telegram">
+    <div class="view-header">
+      <div>
+        <div class="vh-title">Telegram Bot</div>
+        <div class="vh-sub">@streaklyapp_bot · статус: планируется</div>
+      </div>
+      <div class="vh-actions">
+        <button class="btn btn-ghost">Документация BotFather</button>
+        <button class="btn btn-primary">🚀 Deploy Bot</button>
+      </div>
+    </div>
+
+    <div class="bot-stat-grid">
+      <div class="bot-stat"><div class="bot-stat-val">—</div><div class="bot-stat-lbl">Пользователей бота</div></div>
+      <div class="bot-stat"><div class="bot-stat-val">—</div><div class="bot-stat-lbl">Сообщений сегодня</div></div>
+      <div class="bot-stat"><div class="bot-stat-val" style="color:var(--amber);">Dev</div><div class="bot-stat-lbl">Статус деплоя</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Архитектура бота</div></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="background:var(--card2);border-radius:var(--rsm);padding:13px;border:1px solid var(--line);">
+              <div style="font-size:12px;color:var(--ac2);font-weight:600;margin-bottom:6px;">Стек</div>
+              <div style="font-size:13px;color:var(--ink2);line-height:1.8;">
+                Python + <span style="color:var(--green);">aiogram 3.x</span><br>
+                PostgreSQL (основная БД)<br>
+                Redis (сессии, очереди)<br>
+                APScheduler (напоминания)<br>
+                Webhooks → HTTPS endpoint
+              </div>
+            </div>
+            <div style="background:var(--card2);border-radius:var(--rsm);padding:13px;border:1px solid var(--line);">
+              <div style="font-size:12px;color:var(--ac2);font-weight:600;margin-bottom:6px;">Синхронизация с PWA</div>
+              <div style="font-size:13px;color:var(--ink2);line-height:1.7;">
+                Единая БД → чекин в боте отражается в PWA<br>
+                Telegram user_id = primary key<br>
+                JWT токен для авторизации PWA
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-title">Сценарий использования</div></div>
+        <div class="card-body">
+          <div class="msg-preview">
+<span class="comment"># 07:00 утром — бот пишет первым</span>
+
+<span class="bot-msg">🔥 Доброе утро, Айгерим!
+Стрик: <b>12 дней</b> · Сегодня 4 привычки
+
+[✅ Бег] [✅ Вода] [📚 Чтение] [🧘 Медитация]</span>
+
+<span class="user-msg">→ (нажимает ✅ Бег)</span>
+
+<span class="bot-msg">✅ Бег отмечен! 🏃
+Введи км и время:
+<i>Например: 5.2 28</i></span>
+
+<span class="user-msg">→ 6.1 34</span>
+
+<span class="bot-msg">💪 6.1 км за 34 мин · темп 5:34/км
+Стрик <b>13 дней</b>! Рекорд ещё впереди 🔥</span>
+
+<span class="cmd">/stats — недельный отчёт
+/social — рейтинг с друзьями  
+/upgrade — перейти на Pro</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-title">Роадмап Telegram-бота</div></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+          <div style="background:var(--card2);border-radius:var(--rsm);padding:13px;border:1px solid rgba(124,106,247,.2);">
+            <div style="font-size:11px;color:var(--ac2);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">Фаза 1 · MVP</div>
+            <div style="font-size:12px;color:var(--ink2);line-height:1.8;">
+              ✓ /start онбординг<br>
+              ✓ Ежедневные уведомления<br>
+              ✓ Inline-кнопки чекина<br>
+              ✓ /stats за неделю<br>
+              ○ Оплата через Kaspi QR
+            </div>
+          </div>
+          <div style="background:var(--card2);border-radius:var(--rsm);padding:13px;border:1px solid var(--line);">
+            <div style="font-size:11px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">Фаза 2 · Engagement</div>
+            <div style="font-size:12px;color:var(--ink2);line-height:1.8;">
+              ○ Индивидуальные напоминания<br>
+              ○ Ввод данных (км, страницы)<br>
+              ○ /social рейтинги<br>
+              ○ Групповые челленджи<br>
+              ○ Strava webhook → авточекин
+            </div>
+          </div>
+          <div style="background:var(--card2);border-radius:var(--rsm);padding:13px;border:1px solid var(--line);">
+            <div style="font-size:11px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">Фаза 3 · Monetization</div>
+            <div style="font-size:12px;color:var(--ink2);line-height:1.8;">
+              ○ Inline-оплата Telegram Payments<br>
+              ○ ИИ-инсайты через GPT-4<br>
+              ○ Реферальная программа<br>
+              ○ Семейный аккаунт<br>
+              ○ White-label для корпоратов
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ INTEGRATIONS ════════ -->
+  <div class="view" id="v-integrations">
+    <div class="view-header">
+      <div>
+        <div class="vh-title">Интеграции</div>
+        <div class="vh-sub">OAuth-провайдеры и API-статус</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Статус подключений</div></div>
+      <table class="data-table" id="int-table"></table>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Архитектура OAuth-потока</div></div>
+      <div class="card-body">
+        <div class="msg-preview">
+<span class="comment"># Strava OAuth 2.0 flow</span>
+
+<span class="cmd">1. PWA → GET /auth/strava</span>
+<span class="bot-msg">   Redirect to strava.com/oauth/authorize
+   ?client_id=YOUR_ID
+   &redirect_uri=https://streaklyapp.app/callback
+   &scope=activity:read_all</span>
+
+<span class="cmd">2. Strava → POST /callback?code=ABC</span>
+<span class="bot-msg">   Server exchanges code for access_token
+   Saves token encrypted in PostgreSQL</span>
+
+<span class="cmd">3. Strava Webhook → POST /webhooks/strava</span>
+<span class="bot-msg">   {event: "activity", owner_id: 12345}
+   Server fetches activity, auto-checks habit ✅</span>
+        </div>
+        <div style="margin-top:12px;padding:12px;background:rgba(240,79,94,.08);border:1px solid rgba(240,79,94,.2);border-radius:var(--rsm);font-size:12px;color:var(--red);">
+          ⚠️ Текущая версия симулирует OAuth — реальные токены требуют бэкенда с HTTPS. OAuth-секреты НЕЛЬЗЯ хранить в браузере.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ ALERTS ════════ -->
+  <div class="view" id="v-alerts">
+    <div class="view-header">
+      <div>
+        <div class="vh-title">Алерты</div>
+        <div class="vh-sub">3 требуют немедленного внимания</div>
+      </div>
+      <div class="vh-actions">
+        <button class="btn btn-ghost">Отметить все прочитанными</button>
+      </div>
+    </div>
+    <div class="card" id="alerts-card">
+      <div class="card-head"><div class="card-title">Активные алерты</div></div>
+      <div class="card-body" style="padding-top:6px;" id="alerts-list"></div>
+    </div>
+  </div>
+
+  <!-- ════════ SETTINGS ════════ -->
+  <div class="view" id="v-settings">
+    <div class="view-header">
+      <div>
+        <div class="vh-title">Настройки</div>
+        <div class="vh-sub">Конфигурация сервиса</div>
+      </div>
+      <div class="vh-actions">
+        <button class="btn btn-primary" onclick="toast('✅ Настройки сохранены')">Сохранить</button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Продукт</div></div>
+        <div class="card-body">
+          <div class="form-section">
+            <div class="form-row">
+              <div class="form-field"><label>Название сервиса</label><input value="Streaklyapp"></div>
+              <div class="form-field"><label>Домен</label><input value="streaklyapp.app"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-field"><label>Базовая цена (₸/мес)</label><input type="number" value="2990"></div>
+              <div class="form-field"><label>Годовая цена (₸/мес)</label><input type="number" value="1990"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-field"><label>Семейный план (₸/мес)</label><input type="number" value="5990"></div>
+              <div class="form-field"><label>Free: макс. привычек</label><input type="number" value="3"></div>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><div class="toggle-info-title">7 дней бесплатного Pro при регистрации</div><div class="toggle-info-desc">Включено для новых пользователей</div></div>
+            <div class="toggle-sw on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><div class="toggle-info-title">Показывать paywall при 3-й привычке</div><div class="toggle-info-desc">Триггер апгрейда</div></div>
+            <div class="toggle-sw on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><div class="toggle-info-title">Реферальная программа</div><div class="toggle-info-desc">+7 дней Pro за каждого приглашённого</div></div>
+            <div class="toggle-sw on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-title">Уведомления и бот</div></div>
+        <div class="card-body">
+          <div class="form-section">
+            <div class="form-row">
+              <div class="form-field"><label>Telegram Bot Token</label><input type="password" placeholder="Из @BotFather" value="••••••••••••••••"></div>
+              <div class="form-field"><label>Bot Username</label><input value="@streaklyapp_bot"></div>
+            </div>
+            <div class="form-field" style="margin-bottom:10px;"><label>Webhook URL</label><input value="https://api.streaklyapp.app/webhook/telegram"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><div class="toggle-info-title">Утренние push-уведомления</div><div class="toggle-info-desc">Отправка по расписанию каждого юзера</div></div>
+            <div class="toggle-sw on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><div class="toggle-info-title">Strava Webhook</div><div class="toggle-info-desc">Авточекин при активности в Strava</div></div>
+            <div class="toggle-sw" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><div class="toggle-info-title">ИИ-инсайты (GPT-4o)</div><div class="toggle-info-desc">Только для Pro-пользователей</div></div>
+            <div class="toggle-sw on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-title">База данных и хранение</div></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+          <div style="background:var(--card2);border-radius:var(--rsm);padding:13px;border:1px solid rgba(16,217,135,.2);">
+            <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:5px;">CLIENT · IndexedDB</div>
+            <div style="font-size:12px;color:var(--ink2);line-height:1.7;">DB_VER: 2<br>Stores: 7<br>Миграция: ✓ безопасна<br>Export: ✓ JSON</div>
+          </div>
+          <div style="background:var(--card2);border-radius:var(--rsm);padding:13px;border:1px solid rgba(245,165,36,.2);">
+            <div style="font-size:11px;color:var(--amber);font-weight:600;margin-bottom:5px;">SERVER · PostgreSQL</div>
+            <div style="font-size:12px;color:var(--ink2);line-height:1.7;">Статус: не настроен<br>Нужен для: cross-device<br>OAuth токены<br>Telegram бот</div>
+          </div>
+          <div style="background:var(--card2);border-radius:var(--rsm);padding:13px;border:1px solid var(--line);">
+            <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:5px;">CACHE · Redis</div>
+            <div style="font-size:12px;color:var(--ink2);line-height:1.7;">Статус: не настроен<br>Нужен для: сессии<br>Push очереди<br>Rate limiting</div>
+          </div>
+        </div>
+        <div style="padding:12px;background:rgba(240,79,94,.07);border:1px solid rgba(240,79,94,.18);border-radius:var(--rsm);font-size:12px;color:var(--red);line-height:1.7;">
+          <strong>⚠️ Критическая проблема данных:</strong> Стрики пересчитываются из in-memory массива, а не из IndexedDB checkins. 
+          При PWA reinstall пользователь потеряет стрики (но не чекины). <strong>Нужно добавить recalcStreakFromCheckins() вызываемую при каждом startApp().</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /root -->
+
+<!-- Toast -->
+<div id="toast" style="
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--card2);color:var(--ink);padding:10px 20px;border-radius:99px;
+  font-size:13px;font-weight:500;border:1px solid var(--line2);z-index:999;
+  backdrop-filter:blur(12px);transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap;pointer-events:none;
+"></div>
+
+<script>
+/* ═══ NAVIGATION ═══ */
+function show(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('v-'+id).classList.add('active');
+  // highlight nav
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes("'"+id+"'")) n.classList.add('active');
+  });
+}
+
+/* ═══ LIVE CLOCK ═══ */
+function updateClock() {
+  document.getElementById('live-time').textContent =
+    new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+updateClock(); setInterval(updateClock, 1000);
+
+/* ═══ TOAST ═══ */
+let tt;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(tt);
+  tt = setTimeout(() => t.style.transform = 'translateX(-50%) translateY(80px)', 2600);
+}
+
+/* ═══ REVENUE CHART ═══ */
+function buildRevChart(elId, labelId, h) {
+  const months = ['Янв','Фев','Мар','Апр','Май','Июн'];
+  const vals   = [120000,280000,490000,820000,1240000,1240000];
+  const max = Math.max(...vals);
+  const el = document.getElementById(elId);
+  const ll = document.getElementById(labelId);
+  if (!el || !ll) return;
+  el.innerHTML = '';
+  ll.innerHTML = '';
+  months.forEach((m, i) => {
+    const pct = Math.round(vals[i] / max * 100);
+    const col = document.createElement('div');
+    col.className = 'rev-col';
+    col.innerHTML = `
+      <div class="rev-bar" style="height:${pct}%;
+        background:${i===months.length-1?'var(--green)':i===months.length-2?'rgba(16,217,135,.5)':'rgba(124,106,247,.4)'}"
+        title="₸ ${(vals[i]/1000).toFixed(0)}K"></div>
+    `;
+    el.appendChild(col);
+
+    const lc = document.createElement('div');
+    lc.className = 'rev-col';
+    lc.innerHTML = `<div class="rev-label">${m}</div>`;
+    ll.appendChild(lc);
+  });
+}
+buildRevChart('rev-chart','rev-labels', 100);
+buildRevChart('rev-chart-big','rev-labels-big', 180);
+
+/* ═══ HABIT CHART ═══ */
+function buildHabitChart() {
+  const habits = [
+    { name:'Бег',       val:68, color:'var(--green)' },
+    { name:'Вода',      val:82, color:'var(--sky)' },
+    { name:'Чтение',    val:54, color:'var(--amber)' },
+    { name:'Медитация', val:41, color:'var(--accent)' },
+    { name:'Сон',       val:29, color:'var(--pink)' },
+  ];
+  const max = Math.max(...habits.map(h=>h.val));
+  const el = document.getElementById('habit-chart');
+  if (!el) return;
+  el.innerHTML = '';
+  habits.forEach(h => {
+    const pct = Math.round(h.val/max*100);
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    col.innerHTML = `
+      <div class="bar-fill" style="height:${pct}%;background:${h.color};opacity:.8;" data-tip="${h.val}% юзеров"></div>
+      <div class="bar-label">${h.name}</div>
+    `;
+    el.appendChild(col);
+  });
+}
+buildHabitChart();
+
+/* ═══ HEATMAP ═══ */
+function buildHeatmap() {
+  const el = document.getElementById('heatmap');
+  const dl = document.getElementById('hm-days');
+  if (!el || !dl) return;
+  const levels = [0,0,1,2,3,4,3,2,1,2,3,4,4,3,2,1,0,1,2,3,4,3,2,1,2,3,4,2];
+  levels.forEach(l => {
+    const c = document.createElement('div');
+    c.className = 'hm-cell';
+    c.setAttribute('data-level', l);
+    el.appendChild(c);
+  });
+  ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].forEach(d => {
+    const s = document.createElement('div');
+    s.className = 'hm-day';
+    s.textContent = d;
+    dl.appendChild(s);
+  });
+}
+buildHeatmap();
+
+/* ═══ USERS TABLE ═══ */
+const USERS = [
+  { name:'Айгерим С.', email:'a.s@mail.ru', plan:'Pro', streak:12, habits:4, joined:'10 апр', status:'active', ltv:'₸ 8 970', av:'АС', color:'#8b5cf6' },
+  { name:'Данияр М.',  email:'d.m@gmail.com', plan:'Free', streak:9, habits:2, joined:'15 апр', status:'active', ltv:'—', av:'ДМ', color:'#10b981' },
+  { name:'Аружан К.',  email:'aruzhan@bk.ru', plan:'Pro', streak:22, habits:5, joined:'2 мар', status:'active', ltv:'₸ 17 940', av:'АК', color:'#f59e0b' },
+  { name:'Максат Б.',  email:'maksat@kz.kz', plan:'Годовой', streak:31, habits:4, joined:'15 янв', status:'active', ltv:'₸ 23 880', av:'МБ', color:'#3b82f6' },
+  { name:'Дина Т.',    email:'dina@mail.ru', plan:'Free', streak:0, habits:1, joined:'29 апр', status:'churned', ltv:'—', av:'ДТ', color:'#ef4444' },
+  { name:'Нурлан А.',  email:'n.aly@gmail.com', plan:'Семья', streak:7, habits:6, joined:'1 апр', status:'active', ltv:'₸ 5 990', av:'НА', color:'#e879a0' },
+];
+
+function buildUsersTable() {
+  const t = document.getElementById('users-table');
+  if (!t) return;
+  t.innerHTML = `
+    <thead><tr>
+      <th>Пользователь</th><th>Тариф</th><th>Стрик</th><th>Привычек</th>
+      <th>LTV</th><th>Регистрация</th><th>Статус</th><th>Активность</th>
+    </tr></thead>
+    <tbody>
+    ${USERS.map(u=>`<tr>
+      <td>
+        <div class="user-row">
+          <div class="u-av" style="background:${u.color}22;color:${u.color};">${u.av}</div>
+          <div><div class="u-name">${u.name}</div><div class="u-email">${u.email}</div></div>
+        </div>
+      </td>
+      <td><span class="badge ${u.plan==='Free'?'badge-blue':u.plan==='Churned'?'badge-red':'badge-purple'}">${u.plan}</span></td>
+      <td><span style="font-family:'DM Mono',monospace;color:${u.streak>10?'var(--green)':u.streak>0?'var(--amber)':'var(--red)'};">${u.streak}🔥</span></td>
+      <td>${u.habits}</td>
+      <td style="font-family:'DM Mono',monospace;">${u.ltv}</td>
+      <td style="color:var(--ink3);">${u.joined}</td>
+      <td><span class="badge ${u.status==='active'?'badge-green':'badge-red'}">${u.status==='active'?'Активен':'Churned'}</span></td>
+      <td>
+        <div class="sparkline">
+          ${[3,5,4,0,5,5,4].map(v=>`<div class="sp-bar" style="height:${Math.round(v/5*100)}%;"></div>`).join('')}
+        </div>
+      </td>
+    </tr>`).join('')}
+    </tbody>`;
+}
+buildUsersTable();
+
+/* ═══ INTEGRATIONS TABLE ═══ */
+function buildIntTable() {
+  const ints = [
+    { name:'Strava',       logo:'🟠', status:'connected', users:284, habit:'Бег', api:'activity:read_all', uptime:'99.9%' },
+    { name:'Apple Health', logo:'❤️', status:'planned',  users:0,   habit:'Вода, Сон', api:'HealthKit', uptime:'—' },
+    { name:'Garmin',       logo:'🔷', status:'planned',  users:0,   habit:'Бег', api:'Garmin Connect v1', uptime:'—' },
+    { name:'Google Fit',   logo:'🔵', status:'planned',  users:0,   habit:'Бег, Сон', api:'Fitness API v1', uptime:'—' },
+    { name:'WHOOP',        logo:'⚡', status:'planned',  users:0,   habit:'Сон', api:'WHOOP API v1', uptime:'—' },
+    { name:'Oura Ring',    logo:'💍', status:'planned',  users:0,   habit:'Сон, Медитация', api:'Oura v2', uptime:'—' },
+  ];
+  const t = document.getElementById('int-table');
+  if (!t) return;
+  t.innerHTML = `
+    <thead><tr>
+      <th>Интеграция</th><th>Статус</th><th>Пользователей</th>
+      <th>Привычка</th><th>API scope</th><th>Uptime</th>
+    </tr></thead>
+    <tbody>
+    ${ints.map(x=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:8px;">${x.logo} <strong>${x.name}</strong></div></td>
+      <td><span class="badge ${x.status==='connected'?'badge-green':'badge-blue'}">${x.status==='connected'?'Активно':'Планируется'}</span></td>
+      <td style="font-family:'DM Mono',monospace;">${x.users||'—'}</td>
+      <td style="color:var(--ink2);">${x.habit}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ink3);">${x.api}</td>
+      <td style="color:${x.uptime==='—'?'var(--ink3)':'var(--green)'};">${x.uptime}</td>
+    </tr>`).join('')}
+    </tbody>`;
+}
+buildIntTable();
+
+/* ═══ ROADMAP ═══ */
+const ROADMAP = [
+  { q:'Q2 2025 · Сейчас', items:[
+    { cat:'🐛 Фикс', title:'Streak recalc из IndexedDB', desc:'recalcStreakFromCheckins() при каждом startApp(). Критично для данных.', effort:2, status:'active' },
+    { cat:'🐛 Фикс', title:'dbPut для воды и медитации', desc:'addToRing() должен писать в IndexedDB, не только toast()', effort:1, status:'active' },
+    { cat:'🚀 Фича', title:'Экспорт / Импорт JSON', desc:'Позволит пользователям переносить данные между устройствами', effort:2, status:'active' },
+  ]},
+  { q:'Q3 2025', items:[
+    { cat:'🏗 Инфра', title:'PostgreSQL бэкенд', desc:'FastAPI + Alembic миграции. Единый источник правды для PWA и бота.', effort:5, status:'planned' },
+    { cat:'✈️ Бот', title:'Telegram Bot MVP', desc:'aiogram 3.x: онбординг, ежедневный чекин, /stats', effort:4, status:'planned' },
+    { cat:'💳 Монетизация', title:'Kaspi QR оплата', desc:'Kaspi Business API. Автопродление подписки.', effort:3, status:'planned' },
+    { cat:'🔗 Интеграция', title:'Strava Webhook (реальный)', desc:'OAuth 2.0, токены на сервере, авточекин при активности', effort:4, status:'planned' },
+  ]},
+  { q:'Q4 2025', items:[
+    { cat:'🤖 ИИ', title:'ИИ-инсайты (GPT-4o)', desc:'Персональный анализ паттернов раз в неделю. Только Pro.', effort:3, status:'planned' },
+    { cat:'👥 Соцсеть', title:'Групповые челленджи', desc:'Создать комнату, пригласить до 10 друзей, недельный чемпионат', effort:4, status:'planned' },
+    { cat:'🏗 Инфра', title:'Cross-device sync', desc:'IndexedDB → PostgreSQL двусторонняя синхронизация', effort:5, status:'planned' },
+    { cat:'✈️ Бот', title:'Strava авточекин в боте', desc:'Webhook → бот пишет "Засчитал пробежку 6.1 км 🔥"', effort:2, status:'planned' },
+  ]},
+  { q:'2026', items:[
+    { cat:'💼 B2B', title:'White-label для корпоратов', desc:'HR-дашборд, корпоративные челленджи, 50–500 сотрудников', effort:5, status:'planned' },
+    { cat:'📱 Нативно', title:'React Native / Capacitor', desc:'Нативные push, HealthKit без Safari-ограничений, App Store', effort:5, status:'planned' },
+  ]},
+];
+
+function buildRoadmap() {
+  const grid = document.getElementById('roadmap-grid');
+  if (!grid) return;
+  ROADMAP.forEach(q => {
+    const col = document.createElement('div');
+    col.className = 'quarter-col';
+    col.innerHTML = `<div class="quarter-label">${q.q}</div>`;
+    q.items.forEach(item => {
+      const pips = Array(5).fill(0).map((_,i)=>`<div class="rm-pip ${i<item.effort?'filled':''}"></div>`).join('');
+      const card = document.createElement('div');
+      card.className = `rm-card ${item.status==='done'?'done':item.status==='active'?'active':''}`;
+      card.innerHTML = `
+        <div class="rm-cat" style="color:var(--ink3);">${item.cat}</div>
+        <div class="rm-title">${item.title}</div>
+        <div class="rm-desc">${item.desc}</div>
+        <div class="rm-effort">${pips}</div>
+      `;
+      card.onclick = () => toast(`📌 ${item.title}`);
+      col.appendChild(card);
+    });
+    grid.appendChild(col);
+  });
+}
+buildRoadmap();
+
+/* ═══ TECH DEBT ═══ */
+const DEBT = {
+  crit: [
+    { title:'Streak не пересчитывается из checkins', desc:'h.streak сохраняется в habits store напрямую. При PWA reinstall или очистке кеша → стрики обнуляются, хотя все чекины сохранились в IndexedDB. Нужен recalcStreakFromCheckins() при startApp().', effort:'2–4ч' },
+    { title:'addToRing() не записывает в IndexedDB', desc:'Кнопки +200мл и +5мин вызывают toast() но не вызывают dbPut(). Данные о воде и медитации теряются при перезагрузке страницы.', effort:'1–2ч' },
+    { title:'Нет cross-device синхронизации', desc:'IndexedDB — браузерное хранилище. Смена телефона = потеря всех данных. Пользователь не может использовать одновременно PWA и Telegram бот.', effort:'2–4 недели (бэкенд)' },
+  ],
+  high: [
+    { title:'Нет индексов на checkins store', desc:'getAll() + filter в JS при 365 дней × 10 привычек = тысячи записей без индекса. Нужен createIndex("date","date") и createIndex("habitId","habitId") в onupgradeneeded.', effort:'30мин' },
+    { title:'Нет обработки QuotaExceededError', desc:'Safari ограничивает IndexedDB до ~50MB в режиме PWA. При заполнении — необработанное исключение. Нужен try/catch с информированием пользователя.', effort:'2ч' },
+  ],
+  med: [
+    { title:'OAuth-секреты симулируются в браузере', desc:'connectInt() делает вид что OAuth работает, но реальные access_token нельзя хранить в браузере — это XSS-уязвимость. Нужен серверный прокси.', effort:'Бэкенд (Q3)' },
+    { title:'Service Worker не обновляется автоматически', desc:'skipWaiting() в sw.js агрессивен — может прервать активную транзакцию IndexedDB. Нужна стратегия "обнови при следующем визите".', effort:'2ч' },
+    { title:'Нет миграции данных water/mood-log', desc:'DB_VER=2 создаёт water-log и mood-log stores, но существующие записи воды из in-memory не мигрируют при апгрейде.', effort:'3ч' },
+    { title:'RUNS и BOOKS — глобальные массивы', desc:'Начальные значения захардкожены в JS. При первом запуске они копируются в IndexedDB, но последующие обновления из памяти не синхронизируются обратно.', effort:'4ч' },
+  ]
+};
+
+function buildDebt() {
+  ['crit','high','med'].forEach(level => {
+    const el = document.getElementById('debt-'+level);
+    if (!el) return;
+    DEBT[level].forEach(d => {
+      const sev = {crit:'var(--red)',high:'var(--amber)',med:'var(--sky)'}[level];
+      el.innerHTML += `
+        <div class="debt-item">
+          <div class="debt-sev" style="background:${sev};"></div>
+          <div>
+            <div class="debt-title">${d.title}</div>
+            <div class="debt-desc">${d.desc}</div>
+          </div>
+          <div class="debt-effort mono">${d.effort}</div>
+          <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px;" onclick="toast('📌 Добавлено в спринт: ${d.title.substring(0,30)}...')">В спринт</button>
+        </div>`;
+    });
+  });
+}
+buildDebt();
+
+/* ═══ ALERTS ═══ */
+function buildAlerts() {
+  const el = document.getElementById('alerts-list');
+  if (!el) return;
+  const all = [
+    ...DEBT.crit.map(d => ({ level:'crit', title:d.title, desc:d.desc, time:'Tech Debt' })),
+    { level:'warn', title:'MRR churn превысил 4%', desc:'Целевой показатель <3%. 17 отписок за апрель. Проверить onboarding drop-off.', time:'2ч назад' },
+    { level:'info', title:'Strava API rate limit приближается', desc:'284 пользователя × поллинг каждые 15мин = 1 136 запросов/ч. Лимит Strava: 1 000/ч. Нужен webhook.', time:'6ч назад' },
+  ];
+  all.forEach(a => {
+    const cls = {crit:'crit',warn:'warn',info:'info'}[a.level];
+    el.innerHTML += `
+      <div class="alert-item">
+        <div class="alert-dot ${cls}"></div>
+        <div>
+          <div class="alert-title">${a.title}</div>
+          <div class="alert-desc">${a.desc}</div>
+          <div class="alert-time">${a.time}</div>
+        </div>
+        <button class="btn btn-ghost" style="margin-left:auto;padding:5px 12px;font-size:12px;flex-shrink:0;" onclick="toast('✅ Алерт закрыт')">Закрыть</button>
+      </div>`;
+  });
+}
+buildAlerts();
+</script>
+</body>
+</html>

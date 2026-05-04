@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Streakly">
+<meta name="apple-mobile-web-app-title" content="Streaklyapp">
 <meta name="theme-color" content="#0d0d12">
 <link rel="manifest" href="./manifest.json">
-<title>Streakly</title>
+<title>Streaklyapp</title>
 <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@500;600;700&family=Cabinet+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -351,7 +351,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
 <!-- ══════════════ AUTH SCREEN ══════════════ -->
 <div id="auth-screen">
   <div class="auth-logo">🔥</div>
-  <div class="auth-title clash">Добро пожаловать в Streakly</div>
+  <div class="auth-title clash">Добро пожаловать в Streaklyapp</div>
   <div class="auth-sub">Трекер привычек с ИИ-инсайтами, соревнованиями с друзьями и интеграцией со Strava</div>
 
   <button class="tg-btn" onclick="loginTelegram()">
@@ -562,7 +562,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
     <!-- Pro banner -->
     <div style="margin:0 14px 14px;background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(168,85,247,.1));border:1px solid rgba(139,92,246,.3);border-radius:var(--rc);padding:16px;cursor:pointer;display:flex;align-items:center;gap:12px;" onclick="openPaywall()">
       <span style="font-size:26px;">✨</span>
-      <div style="flex:1;"><div style="font-weight:700;color:var(--ink);font-size:15px;">Streakly Pro</div><div style="font-size:12px;color:var(--v3);">7 дней бесплатно · потом 2 990 ₸/мес</div></div>
+      <div style="flex:1;"><div style="font-weight:700;color:var(--ink);font-size:15px;">Streaklyapp Pro</div><div style="font-size:12px;color:var(--v3);">7 дней бесплатно · потом 2 990 ₸/мес</div></div>
       <span style="color:var(--v2);font-size:18px;">›</span>
     </div>
 
@@ -683,7 +683,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
   <div class="pw-sheet">
     <button class="pw-x" onclick="closePW()">×</button>
     <div class="pw-handle"></div>
-    <div class="pw-title clash">Streakly Pro ✨</div>
+    <div class="pw-title clash">Streaklyapp Pro ✨</div>
     <div class="pw-sub">Разблокируй полный потенциал</div>
     <div class="pw-plans">
       <div class="pw-plan" data-plan="monthly" onclick="selPlan(this)">
@@ -721,8 +721,8 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
 /* ════════════════════════════════════════════════════════
    CONFIG — замени на свои значения после деплоя
 ════════════════════════════════════════════════════════ */
-const BACKEND_URL = 'https://api.streakly.app'; // ← твой API URL
-const BOT_NAME    = 'streakly_kz_bot';          // ← username твоего бота
+const BACKEND_URL = 'https://api.streaklyapp.app'; // ← твой API URL
+const BOT_NAME    = 'streaklyapp_bot';          // ← username твоего бота
 
 /* ════════════════════════════════════════════════════════
    PERSISTENCE — IndexedDB v3
@@ -734,7 +734,7 @@ const BOT_NAME    = 'streakly_kz_bot';          // ← username твоего б�
    ✅ Export / Import full data as JSON
    ✅ User profile (Telegram auth) stored in meta
 ════════════════════════════════════════════════════════ */
-const DB_NAME = 'streakly-db';
+const DB_NAME = 'streaklyapp-db';
 const DB_VER  = 3; // bumped from 2→3: added indexes + user store
 
 let db;
@@ -1255,10 +1255,10 @@ async function startApp() {
       }
     }
     // Синхронизируем данные с сервером раз в час
-    const lastSync = localStorage.getItem('streakly_last_sync');
+    const lastSync = localStorage.getItem('streaklyapp_last_sync');
     if (!lastSync || Date.now() - parseInt(lastSync) > 3600000) {
       syncFromBackend(currentUser.token).then(() => {
-        localStorage.setItem('streakly_last_sync', Date.now().toString());
+        localStorage.setItem('streaklyapp_last_sync', Date.now().toString());
       }).catch(() => {});
     }
   }
@@ -1685,7 +1685,7 @@ async function exportData() {
     const snapshot = {
       version: DB_VER,
       exportedAt: new Date().toISOString(),
-      app: 'Streakly',
+      app: 'Streaklyapp',
       user: currentUser,
       habits:   await dbGetAll('habits').catch(()=>[]),
       checkins: await dbGetAll('checkins').catch(()=>[]),
@@ -1699,7 +1699,7 @@ async function exportData() {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `streakly_backup_${todayKey()}.json`;
+    a.download = `streaklyapp_backup_${todayKey()}.json`;
     a.click();
     URL.revokeObjectURL(url);
     toast('✅ Данные экспортированы! Все ' + snapshot.checkins.length + ' чекинов сохранены.');
@@ -1962,8 +1962,8 @@ ${link}`;
   // Используем Web Share API если доступен
   if (navigator.share) {
     navigator.share({
-      title: 'Streakly — трекер привычек',
-      text: '🔥 Попробуй Streakly — трекер привычек с ИИ-инсайтами! Первые 7 дней Pro бесплатно.',
+      title: 'Streaklyapp — трекер привычек',
+      text: '🔥 Попробуй Streaklyapp — трекер привычек с ИИ-инсайтами! Первые 7 дней Pro бесплатно.',
       url: link,
     }).catch(() => {});
   } else {
