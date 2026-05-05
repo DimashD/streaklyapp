@@ -41,6 +41,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
   position:absolute;inset:0;z-index:300;background:var(--bg);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:32px 24px;overflow-y:auto;
+  /* виден по умолчанию, скрывается через JS */
 }
 .auth-logo{font-size:56px;margin-bottom:16px;}
 .auth-title{font-family:'Clash Display',sans-serif;font-size:28px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:8px;}
@@ -84,6 +85,19 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
   transition:border-color .2s;margin-bottom:10px;
 }
 .auth-otp-inp:focus{border-color:var(--v);}
+
+.google-btn {
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;padding:16px;border:none;border-radius:var(--rc);
+  background:#fff;color:#1f1f1f;
+  border:1.5px solid #e0e0e0;
+  font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:600;
+  cursor:pointer;margin-bottom:14px;
+  transition:transform .15s,box-shadow .15s;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+.google-btn:active{transform:scale(.97);}
+.google-btn:hover{box-shadow:0 4px 16px rgba(0,0,0,.2);}
 
 .tg-btn {
   display:flex;align-items:center;justify-content:center;gap:10px;
@@ -393,16 +407,18 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
   <div class="auth-title clash">Streaklyapp</div>
   <div class="auth-sub">Трекер привычек за 21 день</div>
 
-  <!-- Email форма -->
+  <!-- Auth форма -->
   <div id="auth-email-form" style="width:100%;">
-    <div class="auth-email-wrap">
-      <input class="auth-email-inp" id="auth-email-inp"
-        type="email" placeholder="твой@email.com"
-        autocomplete="email" inputmode="email"
-        onkeydown="if(event.key==='Enter')sendMagicLink()">
-    </div>
-    <button class="auth-email-btn" id="auth-email-btn" onclick="sendMagicLink()">
-      Войти / Зарегистрироваться →
+
+    <!-- Google кнопка — основной способ -->
+    <button class="google-btn" onclick="loginGoogle()">
+      <svg width="20" height="20" viewBox="0 0 48 48" style="flex-shrink:0;">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Войти через Google
     </button>
 
     <div class="auth-divider"><span>или</span></div>
@@ -417,27 +433,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
     </button>
   </div>
 
-  <!-- Magic link отправлен -->
-  <div class="auth-magic-sent" id="auth-magic-sent">
-    <div class="auth-magic-icon">📬</div>
-    <div class="auth-magic-title clash">Проверь почту!</div>
-    <div class="auth-magic-sub">
-      Мы отправили код на<br>
-      <strong id="auth-email-shown"></strong>
-    </div>
-    <!-- OTP ввод -->
-    <div class="auth-otp-wrap" id="auth-otp-wrap" style="display:block;">
-      <input class="auth-otp-inp" id="auth-otp-inp"
-        type="number" placeholder="000000"
-        maxlength="6" inputmode="numeric"
-        oninput="if(this.value.length>=6)verifyOTP()"
-        onkeydown="if(event.key==='Enter')verifyOTP()">
-      <button class="auth-email-btn" onclick="verifyOTP()">Подтвердить →</button>
-    </div>
-    <button style="background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;margin-top:8px;" onclick="resetAuthForm()">
-      ← Изменить email
-    </button>
-  </div>
+
 
   <div class="auth-legal" style="margin-top:8px;">
     Нажимая «Войти», вы принимаете
@@ -633,14 +629,14 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
     </div>
 
     <!-- Guest CTA / Pro banner -->
-    <div id="guest-cta" style="margin:0 14px 14px;background:linear-gradient(135deg,rgba(34,158,217,.2),rgba(34,158,217,.1));border:1px solid rgba(34,158,217,.3);border-radius:var(--rc);padding:16px;cursor:pointer;display:flex;align-items:center;gap:12px;" onclick="loginTelegram()">
-      <span style="font-size:26px;">✈️</span>
-      <div style="flex:1;"><div style="font-weight:700;color:var(--ink);font-size:15px;">Войти через Telegram</div><div style="font-size:12px;color:#93c5fd;">Сохраняй данные и синхронизируй устройства</div></div>
+    <div id="guest-cta" style="margin:0 14px 14px;background:linear-gradient(135deg,rgba(34,158,217,.2),rgba(34,158,217,.1));border:1px solid rgba(34,158,217,.3);border-radius:var(--rc);padding:16px;cursor:pointer;display:flex;align-items:center;gap:12px;" onclick="loginGoogle()">
+      <span style="font-size:26px;">G</span>
+      <div style="flex:1;"><div style="font-weight:700;color:var(--ink);font-size:15px;">Войти через Google</div><div style="font-size:12px;color:#93c5fd;">Один клик — данные сохранятся навсегда</div></div>
       <span style="color:#93c5fd;font-size:18px;">›</span>
     </div>
     <div id="pro-banner" style="display:none;margin:0 14px 14px;background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(168,85,247,.1));border:1px solid rgba(139,92,246,.3);border-radius:var(--rc);padding:16px;cursor:pointer;display:flex;align-items:center;gap:12px;" onclick="openPaywall()">
       <span style="font-size:26px;">✨</span>
-      <div style="flex:1;"><div style="font-weight:700;color:var(--ink);font-size:15px;">Streaklyapp Pro</div><div style="font-size:12px;color:var(--v3);">7 дней бесплатно · потом 2 990 ₸/мес</div></div>
+      <div style="flex:1;"><div style="font-weight:700;color:var(--ink);font-size:15px;">Streaklyapp Pro</div><div style="font-size:12px;color:var(--v3);">Бесплатно — разблокируй все функции</div></div>
       <span style="color:var(--v2);font-size:18px;">›</span>
     </div>
 
@@ -660,9 +656,9 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
       <div class="mi-label">Импорт данных</div>
       <div class="mi-right">›</div>
     </div>
-    <div class="menu-item" onclick="loginTelegram()" id="tg-menu-item">
-      <div class="mi-icon" style="background:rgba(34,158,217,.1);">✈️</div>
-      <div class="mi-label">Подключить Telegram</div>
+    <div class="menu-item" onclick="loginGoogle()" id="tg-menu-item">
+      <div class="mi-icon" style="background:rgba(66,133,244,.1);">G</div>
+      <div class="mi-label">Войти через Google</div>
       <div class="mi-right">›</div>
     </div>
 
@@ -785,8 +781,8 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
       <div class="pw-feat"><div class="pw-feat-ic">🤝</div>Реферальная программа — +7 дней Pro за друга</div>
       <div class="pw-feat"><div class="pw-feat-ic">📤</div>Экспорт и резервные копии</div>
     </div>
-    <button class="pw-cta" onclick="closePW();openPaymentPage(document.querySelector('.pw-plan.hot')?.dataset?.plan || 'monthly')">Попробовать 7 дней бесплатно</button>
-    <div class="pw-note">Потом — 2 990 ₸/мес · Отмена в любой момент</div>
+    <button class="pw-cta" onclick="activateFreePro()">Разблокировать бесплатно 🎉</button>
+    <div class="pw-note">Бесплатно на период запуска 🚀</div>
   </div>
 </div>
 
@@ -796,8 +792,8 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:
 /* ════════════════════════════════════════════════════════
    CONFIG — замени на свои значения после деплоя
 ════════════════════════════════════════════════════════ */
-const BACKEND_URL = 'https://backend-production-xxxx.up.railway.app'; // ← твой API URL
-const BOT_NAME    = 'streaklyapp_bot';          // ← username твоего бота
+const BACKEND_URL = 'https://backend-production-94260.up.railway.app'; // ← твой API URL
+const BOT_NAME    = 'Streaklyapp_bot';          // ← username твоего бота
 
 /* ════════════════════════════════════════════════════════
    PERSISTENCE — IndexedDB v3
@@ -959,7 +955,7 @@ async function sendMagicLink() {
 
     // В demo режиме показываем код (убери в продакшене!)
     if (!BACKEND_URL || BACKEND_URL === '') {
-      toast('🔑 Demo-код: ' + otpCode, 5000);
+      toast('🔑 Код для входа: ' + otpCode); setTimeout(()=>toast('Код: '+otpCode),4000);
     }
   } catch(e) {
     toast('⚠️ Ошибка отправки. Попробуй позже.');
@@ -1044,6 +1040,11 @@ function resetAuthForm() {
 /* ════════════════════════════════════════════════════════
    TELEGRAM AUTH — прямая ссылка на бота
 ════════════════════════════════════════════════════════ */
+function loginGoogle() {
+  // Открываем Google OAuth через бэкенд
+  window.location.href = BACKEND_URL + '/auth/google';
+}
+
 function loginTelegramDirect() {
   // Открываем бота напрямую — пользователь нажимает /start
   // Бот записывает его в БД, потом он возвращается в приложение
@@ -1148,7 +1149,7 @@ async function postCheckinToBackend(habitId, dateStr) {
 
 async function loadAIInsight() {
   const token = currentUser?.token;
-  if (!token || currentUser?.isGuest || !currentUser?.isPro) return null;
+  if (!token || currentUser?.isGuest) return null;
   try {
     const resp = await fetch(BACKEND_URL + '/insights', {
       headers: { 'Authorization': 'Bearer ' + token },
@@ -1180,6 +1181,29 @@ function openPaymentPage(plan) {
   const uid   = currentUser?.id || '';
   const url = `payment.html?plan=${plan}&uid=${uid}&api=${encodeURIComponent(BACKEND_URL)}&bot=${encodeURIComponent('https://t.me/' + BOT_NAME)}`;
   window.open(url, '_blank');
+}
+
+function showAuthScreen() {
+  // Показываем экран авторизации поверх приложения
+  const authEl = document.getElementById('auth-screen');
+  authEl.style.display = 'flex';
+  // Сбрасываем форму
+  resetAuthForm();
+  // Добавляем кнопку "назад" если уже в приложении
+  if (document.getElementById('shell').style.display !== 'none') {
+    // Пользователь уже в приложении — добавим кнопку назад
+    if (!document.getElementById('auth-back-btn')) {
+      const backBtn = document.createElement('button');
+      backBtn.id = 'auth-back-btn';
+      backBtn.textContent = '← Назад';
+      backBtn.style.cssText = 'position:absolute;top:calc(var(--st)+14px);left:16px;background:none;border:none;color:var(--ink2);font-size:15px;cursor:pointer;z-index:10;font-family:inherit;';
+      backBtn.onclick = () => {
+        authEl.style.display = 'none';
+        backBtn.remove();
+      };
+      authEl.appendChild(backBtn);
+    }
+  }
 }
 
 function loginGuest() {
@@ -2059,7 +2083,6 @@ function openAdd()  { document.getElementById('add-sheet').classList.add('open')
 function closeAdd() { document.getElementById('add-sheet').classList.remove('open'); }
 
 async function addPreset(type, icon, name) {
-  if (habits.length >= 3 && !currentUser?.isPro) { openPaywall(); return; }
   const d = DEFS[type] || { color:'#8b5cf6', bg:'rgba(139,92,246,.12)', defTime:'09:00' };
   const h = { id: type+'-'+Date.now(), type, name, icon, color: d.color, bg: d.bg, reminderTime: d.defTime, reminderOn: true, streak:0, bestStreak:0, done:false, createdAt: new Date().toISOString() };
   habits.push(h);
@@ -2070,7 +2093,6 @@ async function addPreset(type, icon, name) {
 async function addCustom() {
   const val = document.getElementById('custom-inp').value.trim();
   if (!val) { toast('⚠️ Введи название'); return; }
-  if (habits.length >= 3 && !currentUser?.isPro) { openPaywall(); return; }
   const h = { id:'c'+Date.now(), type:'custom', name:val, icon:'⭐', color:'#8b5cf6', bg:'rgba(139,92,246,.12)', reminderTime:'09:00', reminderOn:true, streak:0, bestStreak:0, done:false, createdAt: new Date().toISOString() };
   habits.push(h);
   await dbPut('habits', h).catch(() => {});
@@ -2144,10 +2166,6 @@ async function showReferral() {
    AI INSIGHTS в профиле
 ════════════════════════════════════════════════════════ */
 async function showAIInsight() {
-  if (!currentUser || !currentUser.isPro) {
-    openPaywall();
-    return;
-  }
   showSyncBar();
   const insight = await loadAIInsight();
   hideSyncBar();
@@ -2199,6 +2217,18 @@ function goPage(name, el) {
 /* ════════════════════════════════════════════════════════
    PAYWALL
 ════════════════════════════════════════════════════════ */
+function activateFreePro() {
+  // Все фичи бесплатно на период запуска
+  if (currentUser) {
+    currentUser.isPro = true;
+    currentUser.proUntil = new Date(Date.now() + 365*24*60*60*1000).toISOString();
+    dbPut('meta', { key: 'user', val: currentUser }).catch(() => {});
+  }
+  closePW();
+  updateProfile();
+  toast('🎉 Все функции разблокированы бесплатно!');
+}
+
 function openPaywall() { document.getElementById('paywall').classList.add('open'); }
 function closePW()     { document.getElementById('paywall').classList.remove('open'); }
 function selPlan(el)   { document.querySelectorAll('.pw-plan').forEach(p=>p.classList.remove('hot')); el.classList.add('hot'); }
@@ -2218,6 +2248,43 @@ function hideSyncBar()  { document.getElementById('sync-bar').classList.remove('
 /* ════════════════════════════════════════════════════════
    BOOT
 ════════════════════════════════════════════════════════ */
+// Обрабатываем редирект от Google OAuth
+(function handleGoogleCallback() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('auth') === 'google' && params.get('token')) {
+    const user = {
+      id:       params.get('id'),
+      name:     params.get('name'),
+      email:    params.get('email'),
+      picture:  params.get('picture'),
+      token:    params.get('token'),
+      isPro:    params.get('isPro') === 'true',
+      isGuest:  false,
+      googleConnected: true,
+    };
+    // Сохраняем пользователя
+    openDB().then(async () => {
+      await dbPut('meta', { key: 'user', val: user }).catch(() => {});
+      currentUser = user;
+      // Убираем параметры из URL
+      history.replaceState({}, '', location.pathname);
+      // Скрываем auth screen
+      document.getElementById('auth-screen').style.display = 'none';
+      // Запускаем приложение
+      let meta = null;
+      try { meta = await dbGet('meta', 'onboarded'); } catch(e) {}
+      if (meta?.val) {
+        try { habits = await dbGetAll('habits'); } catch(e) { habits = []; }
+        await startApp();
+      } else {
+        proceedToApp();
+      }
+      toast('✅ Добро пожаловать, ' + user.name + '!');
+    });
+    return; // Не показываем auth screen
+  }
+})();
+
 openDB().then(async () => {
   // Check for saved user session
   try {
