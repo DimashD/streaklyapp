@@ -4,14 +4,10 @@
   ignore = "exit 0"
 
 [build.environment]
-  NETLIFY_USE_YARN = "false"
+  NETLIFY_SKIP_PYTHON_SETUP = "1"
+  NODE_VERSION = "18"
 
 [[headers]]
   for = "/*"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
-
-[[headers]]
-  for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
