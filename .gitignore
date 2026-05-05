@@ -6,3 +6,7 @@ __pycache__/
 *.pyc
 .DS_Store
 *.logrequirements.txt
+railway-requirements.txt
+mnt/
+streakly.env
+Без названия.txt
