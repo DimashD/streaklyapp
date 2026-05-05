@@ -2123,28 +2123,55 @@ function buildHeatmap() {
    REFERRAL PROGRAM
 ════════════════════════════════════════════════════════ */
 async function showReferral() {
-  const stats = await loadReferralStats();
-  if (!stats) {
-    toast('⚠️ Сначала войди через Telegram для реферальной программы');
-    return;
+  // Реферальная ссылка работает для всех — гостей и зарегистрированных
+  const baseLink = window.location.origin + window.location.pathname;
+  let link = baseLink;
+  
+  // Если пользователь залогинен — добавляем реф. код
+  if (currentUser && !currentUser.isGuest && currentUser.token) {
+    try {
+      const stats = await loadReferralStats();
+      if (stats && stats.referralCode) {
+        link = baseLink + '?ref=' + stats.referralCode;
+      }
+    } catch(e) {}
   }
-  const link = stats.referralLink || (window.location.origin + '?ref=' + stats.referralCode);
-  const msg = '🤝 Пригласи друга — оба получите +7 дней Pro 🎁! Ссылка: ' + link;
-  // Используем Web Share API если доступен
-  if (navigator.share) {
-    navigator.share({
-      title: 'Streaklyapp — трекер привычек',
-      text: '🔥 Попробуй Streaklyapp — трекер привычек с ИИ-инсайтами! Первые 7 дней Pro бесплатно.',
-      url: link,
-    }).catch(() => {});
-  } else {
-    // Копируем в буфер
-    navigator.clipboard.writeText(link).then(() => {
-      toast('📋 Ссылка скопирована! ' + link);
-    }).catch(() => {
-      toast('Ссылка: ' + link);
-    });
-  }
+
+  const shareText = '🔥 Попробуй Streaklyapp — трекер привычек! Выработай полезные привычки за 21 день. Бесплатно!';
+  
+  // Показываем модальное окно с ссылкой
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:flex-end;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:var(--bg2);border-radius:24px;padding:24px;width:100%;max-width:480px;margin:0 auto;">
+      <div style="font-family:'Clash Display',sans-serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:8px;">🤝 Пригласить друга</div>
+      <div style="font-size:14px;color:var(--ink2);margin-bottom:16px;">Поделись ссылкой — друг получит бесплатный доступ ко всем функциям</div>
+      
+      <div style="background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;font-size:13px;color:var(--ink2);word-break:break-all;">${link}</div>
+        <button onclick="navigator.clipboard.writeText('${link}').then(()=>toast('✅ Скопировано!')).catch(()=>{})" 
+          style="background:var(--v);border:none;border-radius:8px;padding:8px 12px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          Копировать
+        </button>
+      </div>
+
+      <button onclick="
+        if(navigator.share){
+          navigator.share({title:'Streaklyapp',text:'${shareText}',url:'${link}'}).catch(()=>{});
+        } else {
+          navigator.clipboard.writeText('${link}').then(()=>toast('✅ Ссылка скопирована!')).catch(()=>{});
+        }
+      " style="width:100%;padding:15px;background:var(--v);border:none;border-radius:14px;color:#fff;font-family:'Clash Display',sans-serif;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px;">
+        📤 Поделиться
+      </button>
+      
+      <button onclick="this.closest('[style*=fixed]').remove()" 
+        style="width:100%;padding:13px;background:transparent;border:1.5px solid var(--line2);border-radius:14px;color:var(--ink2);font-size:15px;cursor:pointer;">
+        Закрыть
+      </button>
+    </div>`;
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
 }
 
 /* ════════════════════════════════════════════════════════
