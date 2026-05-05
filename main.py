@@ -1185,3 +1185,110 @@ async def email_verify(body: EmailVerifyRequest):
             "referralCode": user["referral_code"],
         }
     }
+
+# ══════════════════════════════════════════════════════
+# GOOGLE OAUTH
+# ══════════════════════════════════════════════════════
+GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+BACKEND_URL_ENV      = os.getenv("BACKEND_URL", "https://backend-production-94260.up.railway.app").rstrip("/")
+
+@app.get("/auth/google")
+async def google_auth_start():
+    """Редиректим пользователя на Google OAuth"""
+    params = {
+        "client_id":     GOOGLE_CLIENT_ID,
+        "redirect_uri":  f"{BACKEND_URL_ENV}/auth/google/callback",
+        "response_type": "code",
+        "scope":         "openid email profile",
+        "access_type":   "offline",
+        "prompt":        "select_account",
+    }
+    from urllib.parse import urlencode
+    url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)
+    return RedirectResponse(url)
+
+@app.get("/auth/google/callback")
+async def google_callback(code: str, state: Optional[str] = None, error: Optional[str] = None):
+    """Google возвращает code → меняем на токен → создаём пользователя"""
+    if error:
+        return RedirectResponse(f"{WEBAPP_URL}?auth=error&msg={error}")
+
+    # Меняем code на токены
+    async with httpx.AsyncClient() as client:
+        token_resp = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code":          code,
+                "client_id":     GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri":  f"{BACKEND_URL_ENV}/auth/google/callback",
+                "grant_type":    "authorization_code",
+            }
+        )
+        if token_resp.status_code != 200:
+            return RedirectResponse(f"{WEBAPP_URL}?auth=error&msg=token_failed")
+
+        token_data = token_resp.json()
+        access_token = token_data.get("access_token")
+
+        # Получаем данные пользователя
+        user_resp = await client.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        if user_resp.status_code != 200:
+            return RedirectResponse(f"{WEBAPP_URL}?auth=error&msg=userinfo_failed")
+
+        google_user = user_resp.json()
+
+    google_id = google_user.get("id")
+    email     = google_user.get("email", "")
+    name      = google_user.get("name", email.split("@")[0])
+    picture   = google_user.get("picture", "")
+
+    # Создаём или обновляем пользователя
+    async with pool.acquire() as conn:
+        # Добавляем колонки если нет
+        await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;")
+        await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;")
+        await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS picture TEXT;")
+
+        # Ищем по google_id или email
+        user = await conn.fetchrow(
+            "SELECT * FROM users WHERE google_id=$1 OR email=$2 LIMIT 1",
+            google_id, email
+        )
+
+        import hashlib
+        user_id = int(hashlib.md5(email.encode()).hexdigest()[:12], 16) % (10**12)
+        ref_code = secrets.token_urlsafe(8)
+
+        if user:
+            user = await conn.fetchrow("""
+                UPDATE users SET google_id=$1, email=$2, first_name=$3,
+                    picture=$4, updated_at=NOW()
+                WHERE id=$5 RETURNING *
+            """, google_id, email, name, picture, user["id"])
+        else:
+            user = await conn.fetchrow("""
+                INSERT INTO users (id, google_id, email, first_name, picture, referral_code)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (id) DO UPDATE SET google_id=$2, email=$3,
+                    first_name=$4, picture=$5, updated_at=NOW()
+                RETURNING *
+            """, user_id, google_id, email, name, picture, ref_code)
+
+    # Создаём токен и редиректим в PWA
+    token = make_token(user["id"])
+    from urllib.parse import urlencode
+    params = urlencode({
+        "auth":     "google",
+        "token":    token,
+        "name":     name,
+        "email":    email,
+        "picture":  picture,
+        "id":       user["id"],
+        "isPro":    "true" if user["is_pro"] else "false",
+    })
+    return RedirectResponse(f"{WEBAPP_URL}?{params}")
