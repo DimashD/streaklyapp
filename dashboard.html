@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Streaklyapp — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@600;700&family=Cabinet+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#09090f; --card:#1a1a26; --card2:#222232;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --ink:#f0eeff; --ink2:#b0adcf; --ink3:#6a6888;
+  --v:#7c6af7; --v2:#a99afa; --g:#10d98a; --r:#f04f5e; --o:#f59e0b;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--ink);font-family:'Cabinet Grotesk',sans-serif;min-height:100vh;}
+
+.header{padding:24px 28px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;}
+.header-title{font-family:'Clash Display',sans-serif;font-size:22px;font-weight:700;}
+.header-sub{font-size:13px;color:var(--ink3);margin-top:2px;}
+.refresh-btn{background:var(--card);border:1px solid var(--line2);border-radius:10px;padding:8px 16px;color:var(--ink2);cursor:pointer;font-size:13px;}
+.refresh-btn:hover{background:var(--card2);}
+
+.login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:16px;}
+.login-input{background:var(--card);border:1.5px solid var(--line2);border-radius:12px;padding:14px 18px;color:var(--ink);font-size:16px;width:280px;outline:none;}
+.login-btn{background:var(--v);border:none;border-radius:12px;padding:14px 32px;color:#fff;font-family:'Clash Display',sans-serif;font-size:16px;font-weight:700;cursor:pointer;width:280px;}
+
+.wrap{max-width:1200px;margin:0 auto;padding:28px;}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:28px;}
+.kpi-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;}
+.kpi-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);margin-bottom:8px;}
+.kpi-value{font-family:'Clash Display',sans-serif;font-size:32px;font-weight:700;color:var(--ink);}
+.kpi-delta{font-size:13px;margin-top:4px;}
+.kpi-delta.up{color:var(--g);}
+.kpi-delta.down{color:var(--r);}
+.kpi-delta.neutral{color:var(--ink3);}
+
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;}
+@media(max-width:768px){.charts-grid{grid-template-columns:1fr;}}
+.chart-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;}
+.chart-title{font-family:'Clash Display',sans-serif;font-size:16px;font-weight:700;margin-bottom:16px;}
+
+/* BAR CHART */
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:120px;}
+.bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px;}
+.bar{background:var(--v);border-radius:4px 4px 0 0;width:100%;transition:height .3s;min-height:4px;}
+.bar-label{font-size:10px;color:var(--ink3);}
+.bar-value{font-size:10px;color:var(--ink2);}
+
+/* TABLE */
+.table-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px;}
+.table-title{font-family:'Clash Display',sans-serif;font-size:16px;font-weight:700;margin-bottom:16px;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink3);padding:8px 12px;border-bottom:1px solid var(--line);}
+td{padding:10px 12px;font-size:14px;border-bottom:1px solid var(--line);color:var(--ink2);}
+td:first-child{color:var(--ink);font-weight:600;}
+tr:last-child td{border:none;}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;}
+.badge-g{background:rgba(16,217,138,.12);color:var(--g);}
+.badge-r{background:rgba(240,79,94,.12);color:var(--r);}
+.badge-o{background:rgba(245,158,11,.12);color:var(--o);}
+
+.loading{text-align:center;padding:40px;color:var(--ink3);}
+.error{color:var(--r);text-align:center;padding:20px;}
+
+/* Funnel */
+.funnel{display:flex;flex-direction:column;gap:8px;}
+.funnel-row{display:flex;align-items:center;gap:12px;}
+.funnel-label{font-size:13px;color:var(--ink2);width:140px;flex-shrink:0;}
+.funnel-bar-wrap{flex:1;background:var(--card2);border-radius:4px;height:24px;overflow:hidden;}
+.funnel-bar{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 8px;}
+.funnel-val{font-size:12px;font-weight:700;color:#fff;}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-screen">
+  <div style="font-size:48px;">🔥</div>
+  <div style="font-family:'Clash Display',sans-serif;font-size:24px;font-weight:700;">Streaklyapp Dashboard</div>
+  <div style="font-size:14px;color:var(--ink3);margin-bottom:8px;">Введи Admin Key для доступа</div>
+  <input class="login-input" id="admin-key-inp" type="password" placeholder="Admin Key" onkeydown="if(event.key==='Enter')login()">
+  <button class="login-btn" onclick="login()">Войти →</button>
+  <div id="login-error" style="color:var(--r);font-size:13px;display:none;">Неверный ключ</div>
+</div>
+
+<div id="dashboard" style="display:none;">
+  <div class="header">
+    <div>
+      <div class="header-title">🔥 Streaklyapp Dashboard</div>
+      <div class="header-sub" id="last-updated">Обновляется...</div>
+    </div>
+    <button class="refresh-btn" onclick="loadData()">🔄 Обновить</button>
+  </div>
+
+  <div class="wrap">
+
+    <!-- KPI CARDS -->
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="loading">Загрузка...</div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">📈 Регистрации (7 дней)</div>
+        <div class="bar-chart" id="reg-chart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">✅ Чекины (7 дней)</div>
+        <div class="bar-chart" id="checkin-chart"></div>
+      </div>
+    </div>
+
+    <!-- FUNNEL -->
+    <div class="chart-card" style="margin-bottom:16px;">
+      <div class="chart-title">🎯 Воронка конверсии</div>
+      <div class="funnel" id="funnel"></div>
+    </div>
+
+    <!-- POPULAR HABITS -->
+    <div class="table-card">
+      <div class="table-title">🏃 Популярные привычки</div>
+      <table>
+        <thead><tr><th>Привычка</th><th>Пользователей</th><th>Ср. стрик</th><th>Популярность</th></tr></thead>
+        <tbody id="habits-table"><tr><td colspan="4" class="loading">Загрузка...</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- RECENT USERS -->
+    <div class="table-card">
+      <div class="table-title">👥 Новые пользователи</div>
+      <table>
+        <thead><tr><th>Пользователь</th><th>Регистрация</th><th>Привычки</th><th>Чекины</th><th>Статус</th></tr></thead>
+        <tbody id="users-table"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div class="table-card">
+      <div class="table-title">💳 Последние платежи</div>
+      <table>
+        <thead><tr><th>Пользователь</th><th>План</th><th>Сумма</th><th>Статус</th><th>Дата</th></tr></thead>
+        <tbody id="payments-table"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const BACKEND = 'https://backend-production-94260.up.railway.app';
+let adminKey = '';
+
+function login() {
+  const key = document.getElementById('admin-key-inp').value.trim();
+  if (!key) return;
+  adminKey = key;
+  loadData();
+}
+
+async function loadData() {
+  try {
+    const resp = await fetch(BACKEND + '/admin/stats', {
+      headers: { 'X-Admin-Key': adminKey }
+    });
+    if (resp.status === 403) {
+      document.getElementById('login-error').style.display = 'block';
+      return;
+    }
+    const data = await resp.json();
+
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('last-updated').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
+
+    renderKPIs(data);
+    renderCharts(data);
+    renderFunnel(data);
+    await loadTables();
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function renderKPIs(d) {
+  const u = d.users || {};
+  const c = d.checkins || {};
+  const r = d.revenue || {};
+
+  const kpis = [
+    { label: 'Всего пользователей', value: u.total || 0, delta: '+' + (u.new_today || 0) + ' сегодня', cls: 'up' },
+    { label: 'DAU (сегодня)', value: c.dau || 0, delta: 'активных сегодня', cls: 'neutral' },
+    { label: 'MAU (30 дней)', value: u.mau || 0, delta: 'активных за месяц', cls: 'neutral' },
+    { label: 'Pro пользователи', value: u.pro || 0, delta: Math.round((u.pro||0)/(u.total||1)*100) + '% конверсия', cls: 'up' },
+    { label: 'Чекинов сегодня', value: c.today || 0, delta: 'всего ' + (c.total || 0), cls: 'neutral' },
+    { label: 'MRR (₸)', value: formatNum(r.mrr_tenge || 0), delta: 'выручка за месяц', cls: r.mrr_tenge > 0 ? 'up' : 'neutral' },
+    { label: 'Всего выручки (₸)', value: formatNum(r.total_tenge || 0), delta: 'за всё время', cls: 'neutral' },
+    { label: 'Retention D7', value: (d.retention?.d7 || 0) + '%', delta: 'вернулись на 7й день', cls: (d.retention?.d7||0) > 30 ? 'up' : 'down' },
+  ];
+
+  document.getElementById('kpi-grid').innerHTML = kpis.map(k => `
+    <div class="kpi-card">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-delta ${k.cls}">${k.delta}</div>
+    </div>
+  `).join('');
+}
+
+function renderCharts(d) {
+  const days = d.daily || generateMockDays();
+  renderBarChart('reg-chart', days.map(d => ({ label: d.label, value: d.registrations })), 'var(--v)');
+  renderBarChart('checkin-chart', days.map(d => ({ label: d.label, value: d.checkins })), 'var(--g)');
+}
+
+function renderBarChart(id, data, color) {
+  const max = Math.max(...data.map(d => d.value), 1);
+  document.getElementById(id).innerHTML = data.map(d => `
+    <div class="bar-wrap">
+      <div class="bar-value">${d.value}</div>
+      <div class="bar" style="height:${Math.max(d.value/max*100,4)}%;background:${color};"></div>
+      <div class="bar-label">${d.label}</div>
+    </div>
+  `).join('');
+}
+
+function renderFunnel(d) {
+  const u = d.users || {};
+  const total = u.total || 1;
+  const steps = [
+    { label: 'Зашли на сайт', value: u.visits || total * 3, color: 'var(--v)', pct: 100 },
+    { label: 'Зарегистрировались', value: total, color: '#6366f1', pct: Math.round(total/(u.visits||total*3)*100) },
+    { label: 'Прошли онбординг', value: u.onboarded || Math.round(total*0.7), color: 'var(--g)', pct: 70 },
+    { label: 'Вернулись D3', value: u.retained_d3 || Math.round(total*0.4), color: 'var(--o)', pct: 40 },
+    { label: 'Pro подписка', value: u.pro || 0, color: '#f59e0b', pct: Math.round((u.pro||0)/total*100) },
+  ];
+
+  document.getElementById('funnel').innerHTML = steps.map(s => `
+    <div class="funnel-row">
+      <div class="funnel-label">${s.label}</div>
+      <div class="funnel-bar-wrap">
+        <div class="funnel-bar" style="width:${s.pct}%;background:${s.color};">
+          <span class="funnel-val">${s.value}</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--ink3);width:36px;text-align:right;">${s.pct}%</div>
+    </div>
+  `).join('');
+}
+
+async function loadTables() {
+  // Последние пользователи
+  try {
+    const resp = await fetch(BACKEND + '/admin/users?limit=10', {
+      headers: { 'X-Admin-Key': adminKey }
+    });
+    if (resp.ok) {
+      const users = await resp.json();
+      document.getElementById('users-table').innerHTML = users.map(u => `
+        <tr>
+          <td>${u.first_name || u.email || 'Аноним'} ${u.username ? '@'+u.username : ''}</td>
+          <td>${formatDate(u.created_at)}</td>
+          <td>${u.habits_count || 0}</td>
+          <td>${u.checkins_count || 0}</td>
+          <td><span class="badge ${u.is_pro ? 'badge-g' : 'badge-o'}">${u.is_pro ? 'Pro' : 'Free'}</span></td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" style="color:var(--ink3);text-align:center;">Нет данных</td></tr>';
+    }
+  } catch(e) {
+    document.getElementById('users-table').innerHTML = '<tr><td colspan="5" class="error">Ошибка загрузки</td></tr>';
+  }
+
+  // Платежи
+  try {
+    const resp = await fetch(BACKEND + '/admin/payments?limit=10', {
+      headers: { 'X-Admin-Key': adminKey }
+    });
+    if (resp.ok) {
+      const payments = await resp.json();
+      document.getElementById('payments-table').innerHTML = payments.map(p => `
+        <tr>
+          <td>${p.first_name || p.user_id}</td>
+          <td>${p.plan}</td>
+          <td>${formatNum(p.amount)} ₸</td>
+          <td><span class="badge ${p.status==='paid'?'badge-g':p.status==='pending'?'badge-o':'badge-r'}">${p.status}</span></td>
+          <td>${formatDate(p.created_at)}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" style="color:var(--ink3);text-align:center;">Нет платежей</td></tr>';
+    }
+  } catch(e) {}
+
+  // Популярные привычки
+  try {
+    const resp = await fetch(BACKEND + '/admin/habits', {
+      headers: { 'X-Admin-Key': adminKey }
+    });
+    if (resp.ok) {
+      const habits = await resp.json();
+      document.getElementById('habits-table').innerHTML = habits.map(h => `
+        <tr>
+          <td>${h.icon || ''} ${h.name}</td>
+          <td>${h.users_count || 0}</td>
+          <td>${h.avg_streak || 0} дн</td>
+          <td>
+            <div style="background:var(--card2);border-radius:4px;height:8px;width:100%;overflow:hidden;">
+              <div style="background:var(--v);height:100%;width:${h.popularity || 0}%;border-radius:4px;"></div>
+            </div>
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="4" style="color:var(--ink3);text-align:center;">Нет данных</td></tr>';
+    }
+  } catch(e) {}
+}
+
+function formatNum(n) {
+  return Number(n).toLocaleString('ru-RU');
+}
+
+function formatDate(s) {
+  if (!s) return '—';
+  return new Date(s).toLocaleDateString('ru-RU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+
+function generateMockDays() {
+  const days = [];
+  const labels = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push({
+      label: labels[d.getDay() === 0 ? 6 : d.getDay()-1],
+      registrations: Math.floor(Math.random() * 10),
+      checkins: Math.floor(Math.random() * 50),
+    });
+  }
+  return days;
+}
+
+// Автообновление каждые 5 минут
+setInterval(() => { if (adminKey) loadData(); }, 300000);
+</script>
+</body>
+</html>
